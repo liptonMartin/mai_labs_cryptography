@@ -1,4 +1,4 @@
-﻿using Core.Lab_1.Lab_1_1;
+﻿using Core.Lab_1;
 
 namespace Tests.Tests_Lab_1.Tests_Lab_1_1;
 

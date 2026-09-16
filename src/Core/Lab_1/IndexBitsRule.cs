@@ -1,4 +1,4 @@
-﻿namespace Core.Lab_1.Lab_1_1;
+﻿namespace Core.Lab_1;
 
 public enum IndexBitsRule
 {

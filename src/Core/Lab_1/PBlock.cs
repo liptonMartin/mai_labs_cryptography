@@ -1,6 +1,4 @@
-﻿using System.ComponentModel;
-
-namespace Core.Lab_1.Lab_1_1;
+﻿namespace Core.Lab_1;
 
 public static class PBlock
 {
@@ -16,7 +14,7 @@ public static class PBlock
 
             var indexInLsb0Format = _ChangeIndexToLsb0(index, countBits, rule);
             var indexInMsb0Format = _ChangeIndexFromLsb0ToMsb0(indexInLsb0Format, countBits);
-            
+
             var byteNumber = indexInMsb0Format / 8;
             var bitNumber = indexInLsb0Format % 8;
 
@@ -26,14 +24,14 @@ public static class PBlock
 
             var resultByteNumber = resultIndexInMsb0 / 8;
             var resultBitNumber = resultIndexInLsb0 % 8;
-            
+
             var value = _GetBit(array[byteNumber], bitNumber);
             _SetBit(ref result[resultByteNumber], value, resultBitNumber);
         }
-        
+
         return result;
     }
-    
+
     private static uint _GetBit(byte sourceByte, int indexInLsb0)
     {
         return (sourceByte & (1u << indexInLsb0)) >> indexInLsb0;
@@ -74,5 +72,4 @@ public static class PBlock
     {
         return countBits - index - 1;
     }
-    
 }
