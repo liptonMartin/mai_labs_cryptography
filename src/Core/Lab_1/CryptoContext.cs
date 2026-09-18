@@ -1,6 +1,4 @@
-﻿using System.Security.Cryptography;
-
-namespace Core.Lab_1;
+﻿namespace Core.Lab_1;
 
 public enum EncryptMode
 {
