@@ -75,11 +75,11 @@ public class CryptoContext(
             var endBlock = offset + blockSizeBytes;
             var block = data[offset..endBlock];
 
-            var blockByEncryptMode = _JoinEncryptMode(block, prevEncryptedBlock, prevBlock);
-            var encryptedBlock = SymmetricalAlgorithm.Encrypt(blockByEncryptMode);
+            var gamma = _BeforeEncrypt(block, prevEncryptedBlock, prevBlock);
+            var encryptedBlock = SymmetricalAlgorithm.Encrypt(gamma);
 
-            var totalEncryptedBlock = _DefineTotalEncryptedBlock(encryptedBlock, block);
-            encryptedData.Add(totalEncryptedBlock);
+            var afterEncrypt = _AfterEncrypt(encryptedBlock, block);
+            encryptedData.Add(afterEncrypt);
 
             prevEncryptedBlock = encryptedBlock;
             prevBlock = block;
@@ -186,7 +186,7 @@ public class CryptoContext(
         }
     }
 
-    private byte[] _JoinEncryptMode(byte[] block, byte[] prevEncryptedBlock, byte[]? prevBlock = null)
+    private byte[] _BeforeEncrypt(byte[] block, byte[] prevEncryptedBlock, byte[]? prevBlock = null)
     {
         if (block.Length != prevEncryptedBlock.Length)
         {
@@ -221,7 +221,7 @@ public class CryptoContext(
         return result;
     }
 
-    private byte[] _DefineTotalEncryptedBlock(byte[] encryptedBlock, byte[] block)
+    private byte[] _AfterEncrypt(byte[] encryptedBlock, byte[] block)
     {
         if (block.Length != encryptedBlock.Length)
             throw new InvalidOperationException("The blocks have different length");
