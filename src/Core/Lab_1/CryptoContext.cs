@@ -64,6 +64,8 @@ public class CryptoContext(
         if (SymmetricalAlgorithm is null)
             throw new InvalidOperationException("The symmetrical algorithm is not initialized!");
 
+        data = _AddPadding(data);
+        
         var encryptedData = new byte[data.Length];
         var blockSizeBytes = SymmetricalAlgorithm.BlockSizeBytes;
 
@@ -81,10 +83,8 @@ public class CryptoContext(
 
         for (var offset = 0; offset < data.Length; offset += blockSizeBytes)
         {
-            var endBlock = Math.Min(data.Length - 1, offset + blockSizeBytes);
+            var endBlock = offset + blockSizeBytes;
             var block = data[offset..endBlock];
-            if (data.Length - 1 <= endBlock)
-                block = _PadBlock(block);
 
             var blockByEncryptMode = _JoinEncryptMode(block, prevEncryptedBlock!, prevBlock);
             var encryptedBlock = SymmetricalAlgorithm.Encrypt(blockByEncryptMode);
@@ -101,19 +101,37 @@ public class CryptoContext(
 
     private byte[] _Decrypt(byte[] data)
     {
-        throw new NotImplementedException();
+        if (SymmetricalAlgorithm is null)
+            throw new InvalidOperationException("The symmetrical algorithm is not initialized!");
+
+        var decryptedData = new byte[data.Length];
+        var blockSizeBytes = SymmetricalAlgorithm.BlockSizeBytes;
+
+        if (
+            InitializationVector is null &&
+            EncryptMode is EncryptMode.Cbc or EncryptMode.Pcbc or EncryptMode.Cfb or EncryptMode.Ofb
+        )
+            throw new InvalidOperationException("Initializer vector is null");
+
+
+        for (var offset = 0; offset < data.Length; offset += blockSizeBytes)
+        {
+            var endBlock = Math.Min(data.Length - 1, offset + blockSizeBytes);
+            var block = data[offset..endBlock];
+
+            // TODO: здесь что-то про паддинг должно быть
+        }
     }
 
-    private byte[] _PadBlock(byte[] block)
+    private byte[] _AddPadding(byte[] data)
     {
         var blockSizeBytes = SymmetricalAlgorithm!.BlockSizeBytes;
-        var countMissingBytes = blockSizeBytes - block.Length;
-        var lengthNewArray = countMissingBytes > 0 ? countMissingBytes : countMissingBytes + 1;
-        var newArray = new byte[lengthNewArray];
+        var countMissingBytes = blockSizeBytes - (data.Length % blockSizeBytes);
+        var newArray = new byte[countMissingBytes];
         switch (PaddingMode)
         {
             case PaddingMode.Zeros:
-                if (block.Length == blockSizeBytes) return block;
+                if (countMissingBytes == blockSizeBytes) return data; // not required add empty block
                 break;
             case PaddingMode.AnsiX923:
                 newArray[^1] = (byte)countMissingBytes;
@@ -123,16 +141,37 @@ public class CryptoContext(
                 break;
             case PaddingMode.Iso10126:
                 var random = new Random();
-                for (var i = 0; i < lengthNewArray - 1; ++i)
+                for (var i = 0; i < countMissingBytes - 1; ++i)
                 {
                     newArray[i] = (byte)random.Next();
                 }
 
                 newArray[^1] = (byte)countMissingBytes;
                 break;
+            default:
+                throw new NotImplementedException("Unknown padding mode!");
         }
 
-        return block.Concat(newArray).ToArray();
+        return data.Concat(newArray).ToArray();
+    }
+
+    private byte[] _RemovePadding(byte[] data)
+    {
+        switch (PaddingMode)
+        {
+            case PaddingMode.Zeros:
+                var listData = data.ToList();
+                for (var i = data.Length - 1; i >= 0; --i)
+                    listData.RemoveAt(i);
+
+                return listData.ToArray();
+            case PaddingMode.AnsiX923 or PaddingMode.Pkcs7 or PaddingMode.Iso10126:
+                var countToDelete = data[^1];
+                return data[..^countToDelete];
+            
+            default:
+                throw new NotImplementedException("Unknown padding mode!");
+        }
     }
 
     private byte[] _JoinEncryptMode(byte[] block, byte[] prevEncryptedBlock, byte[]? prevBlock = null)
@@ -174,7 +213,7 @@ public class CryptoContext(
                 }
 
                 var counterBytes = BitConverter.GetBytes(_counter.Value);
-                return _PadBlock(counterBytes);
+                return _AddPadding(counterBytes);
 
             case EncryptMode.RandomDelta:
                 // TODO: do random delta 
