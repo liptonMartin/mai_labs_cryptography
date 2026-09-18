@@ -65,8 +65,8 @@ public class CryptoContext(
             throw new InvalidOperationException("The symmetrical algorithm is not initialized!");
 
         data = _AddPadding(data);
-        
-        var encryptedData = new byte[data.Length];
+
+        List<byte[]> encryptedData = [];
         var blockSizeBytes = SymmetricalAlgorithm.BlockSizeBytes;
 
         if (
@@ -90,13 +90,13 @@ public class CryptoContext(
             var encryptedBlock = SymmetricalAlgorithm.Encrypt(blockByEncryptMode);
 
             var totalEncryptedBlock = _DefineTotalEncryptedBlock(encryptedBlock, block);
-            encryptedData = encryptedData.Concat(totalEncryptedBlock).ToArray();
+            encryptedData.Add(totalEncryptedBlock);
 
             prevEncryptedBlock = encryptedBlock;
             prevBlock = block;
         }
 
-        return encryptedData;
+        return encryptedData.SelectMany(x => x).ToArray();
     }
 
     private byte[] _Decrypt(byte[] data)
@@ -104,7 +104,7 @@ public class CryptoContext(
         if (SymmetricalAlgorithm is null)
             throw new InvalidOperationException("The symmetrical algorithm is not initialized!");
 
-        var decryptedData = new byte[data.Length];
+        List<byte[]> decryptedData = [];
         var blockSizeBytes = SymmetricalAlgorithm.BlockSizeBytes;
 
         if (
@@ -112,14 +112,49 @@ public class CryptoContext(
             EncryptMode is EncryptMode.Cbc or EncryptMode.Pcbc or EncryptMode.Cfb or EncryptMode.Ofb
         )
             throw new InvalidOperationException("Initializer vector is null");
+        
+        if (EncryptMode == EncryptMode.Ctr)
+            _counter = (int)Parameters[0];
 
-
+        var prevDecryptedBlock = InitializationVector!;
+        var prevGamma = InitializationVector!;
+        var prevEncryptedBlock = new byte[blockSizeBytes];
         for (var offset = 0; offset < data.Length; offset += blockSizeBytes)
         {
-            var endBlock = Math.Min(data.Length - 1, offset + blockSizeBytes);
+            var endBlock = offset + blockSizeBytes;
             var block = data[offset..endBlock];
 
-            // TODO: здесь что-то про паддинг должно быть
+            var gamma = _BeforeDecrypt(block, prevDecryptedBlock, prevGamma);
+            var decryptedBlock = _DoDecrypt(block, gamma, prevEncryptedBlock, prevDecryptedBlock);
+
+            prevDecryptedBlock = decryptedBlock;
+            prevEncryptedBlock = block;
+
+            decryptedData.Add(decryptedBlock);
+        }
+
+        var decryptedDataArray = decryptedData.SelectMany(x => x).ToArray();
+        return _RemovePadding(decryptedDataArray);
+    }
+
+    private byte[] _DoDecrypt(byte[] block, byte[] gamma, byte[] prevEncryptedBlock,
+        byte[] prevDecryptedBlock)
+    {
+        switch (EncryptMode)
+        {
+            case EncryptMode.Ecb:
+                return gamma;
+            case EncryptMode.Cbc:
+                return _XorArrayOfBytes(gamma, prevEncryptedBlock);
+            case EncryptMode.Pcbc:
+                return _XorArrayOfBytes(gamma, prevEncryptedBlock, prevDecryptedBlock);
+            case EncryptMode.Cfb or Lab_1.EncryptMode.Ofb or EncryptMode.Ctr:
+                return _XorArrayOfBytes(gamma, block);
+            case EncryptMode.RandomDelta:
+                // TODO: impl Random Delta
+                throw new NotImplementedException();
+            default:
+                throw new NotImplementedException();
         }
     }
 
@@ -168,7 +203,7 @@ public class CryptoContext(
             case PaddingMode.AnsiX923 or PaddingMode.Pkcs7 or PaddingMode.Iso10126:
                 var countToDelete = data[^1];
                 return data[..^countToDelete];
-            
+
             default:
                 throw new NotImplementedException("Unknown padding mode!");
         }
@@ -240,6 +275,31 @@ public class CryptoContext(
                 // TODO: do random delta
                 throw new NotImplementedException();
 
+            default:
+                throw new NotImplementedException();
+        }
+    }
+
+    private byte[] _BeforeDecrypt(byte[] block, byte[] prevDecryptedBlock, byte[] prevGamma)
+    {
+        switch (EncryptMode)
+        {
+            case EncryptMode.Ecb or EncryptMode.Cbc or EncryptMode.Pcbc:
+                return SymmetricalAlgorithm!.Decrypt(block);
+            case EncryptMode.Cfb:
+                return SymmetricalAlgorithm!.Encrypt(prevDecryptedBlock);
+            case EncryptMode.Ofb:
+                return SymmetricalAlgorithm!.Encrypt(prevGamma);
+            case EncryptMode.Ctr:
+                if (_counter is null) throw new InvalidOperationException("Counter is null");
+
+                var counterBytes = BitConverter.GetBytes(_counter.Value);
+                ++_counter;
+                counterBytes = _AddPadding(counterBytes);
+                return SymmetricalAlgorithm!.Encrypt(counterBytes);
+            case EncryptMode.RandomDelta:
+                // TODO: impl Random Delta
+                throw new NotImplementedException();
             default:
                 throw new NotImplementedException();
         }
