@@ -6,7 +6,7 @@ public static class PBlock
     {
         var countBits = array.Length * 8;
         var outputBitLength = pBlock.Length;
-        var result = new byte[array.Length];
+        var result = new byte[array.Length]; // TODO: change length result
 
         for (var i = 0; i < outputBitLength; ++i)
         {
