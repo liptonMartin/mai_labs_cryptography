@@ -1,6 +1,6 @@
 ﻿namespace Core.Lab_1;
 
-public interface IKeyExpander
+public interface IRoundKeysGenerator
 {
     public List<byte[]> GenerateRoundKeys(byte[] key);
 }

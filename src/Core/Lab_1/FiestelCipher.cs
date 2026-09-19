@@ -1,8 +1,8 @@
 ﻿namespace Core.Lab_1;
 
-public class FiestelCipher(IKeyExpander keyExpander, IEncryptionRound encryptionRound)
+public class FiestelCipher(IRoundKeysGenerator roundKeysGenerator, IEncryptionRound encryptionRound)
 {
-    private IKeyExpander KeyExpander => keyExpander;
+    private IRoundKeysGenerator RoundKeysGenerator => roundKeysGenerator;
     private IEncryptionRound EncryptionRound => encryptionRound;
 
     public int RoundCount { get; set; } = 16;
@@ -13,10 +13,10 @@ public class FiestelCipher(IKeyExpander keyExpander, IEncryptionRound encryption
     {
         if (RoundKeys is not null) return;
 
-        RoundKeys = KeyExpander.GenerateRoundKeys(key);
+        RoundKeys = RoundKeysGenerator.GenerateRoundKeys(key);
     }
 
-    public byte[] DoFiestelCipher(byte[] block)
+    public byte[] DoFiestelCipher(byte[] block, bool isEncrypt = true)
     {
         if (RoundKeys is null)
             throw new InvalidOperationException("Use GenerateRoundKeys method before DoFiestelCipher");
@@ -28,10 +28,20 @@ public class FiestelCipher(IKeyExpander keyExpander, IEncryptionRound encryption
         {
             var leftBlock = block[..halfBlockSizeBytes];
             var rightBlock = block[halfBlockSizeBytes..];
-            
-            leftBlock = EncryptionRound.DoEncrypt(leftBlock, RoundKeys[round]);
 
-            block = rightBlock.Concat(leftBlock).ToArray();
+            var tmp = rightBlock;
+            if (isEncrypt)
+            {
+                rightBlock = EncryptionRound.DoEncrypt(leftBlock, RoundKeys[round]);
+                leftBlock = tmp;
+            }
+            else
+            {
+                rightBlock = leftBlock;
+                leftBlock = EncryptionRound.DoEncrypt(tmp, RoundKeys[RoundCount - round]);
+            }
+
+            block = leftBlock.Concat(rightBlock).ToArray();
         }
 
         return block;

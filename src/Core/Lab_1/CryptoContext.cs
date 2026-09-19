@@ -23,6 +23,7 @@ public class CryptoContext(
     byte[] key,
     EncryptMode encryptMode,
     PaddingMode paddingMode,
+    ISymmetricalEncryptDecrypt symmetricalAlgorithm,
     byte[]? initializationVector = null,
     params int[] parameters
 )
@@ -30,14 +31,13 @@ public class CryptoContext(
     private byte[] _key = key;
     private EncryptMode EncryptMode => encryptMode;
     private PaddingMode PaddingMode => paddingMode;
+    private ISymmetricalEncryptDecrypt SymmetricalAlgorithm => symmetricalAlgorithm;
     private byte[]? InitializationVector => initializationVector;
     private int[] Parameters => parameters;
 
     private int? _counter;
     private int? _delta;
-
-    public ISymmetricalEncryptDecrypt? SymmetricalAlgorithm { get; set; }
-
+    
     public void Encrypt(byte[] data, ref byte[] outputBlock) => outputBlock = _Encrypt(data);
     public void Decrypt(byte[] data, ref byte[] outputBlock) => outputBlock = _Decrypt(data);
 
@@ -65,7 +65,7 @@ public class CryptoContext(
         data = _AddPadding(data);
 
         List<byte[]> encryptedData = [];
-        var blockSizeBytes = SymmetricalAlgorithm!.BlockSizeBytes;
+        var blockSizeBytes = SymmetricalAlgorithm.BlockSizeBytes;
 
         var prevEncryptedBlock = InitializationVector!;
         byte[]? prevBlock = null;
@@ -93,7 +93,7 @@ public class CryptoContext(
         _ValidateInputParameters();
 
         List<byte[]> decryptedData = [];
-        var blockSizeBytes = SymmetricalAlgorithm!.BlockSizeBytes;
+        var blockSizeBytes = SymmetricalAlgorithm.BlockSizeBytes;
 
 
         var prevDecryptedBlock = InitializationVector!;
@@ -125,11 +125,11 @@ public class CryptoContext(
             case EncryptMode.Ecb:
                 return gamma;
             case EncryptMode.Cbc:
-                return _XorArrayOfBytes(gamma, prevEncryptedBlock);
+                return Helper.XorArrayOfBytes(gamma, prevEncryptedBlock);
             case EncryptMode.Pcbc:
-                return _XorArrayOfBytes(gamma, prevEncryptedBlock, prevDecryptedBlock);
+                return Helper.XorArrayOfBytes(gamma, prevEncryptedBlock, prevDecryptedBlock);
             case EncryptMode.Cfb or EncryptMode.Ofb or EncryptMode.Ctr or EncryptMode.RandomDelta:
-                return _XorArrayOfBytes(gamma, block);
+                return Helper.XorArrayOfBytes(gamma, block);
             default:
                 throw new NotImplementedException();
         }
@@ -137,7 +137,7 @@ public class CryptoContext(
 
     private byte[] _AddPadding(byte[] data)
     {
-        var blockSizeBytes = SymmetricalAlgorithm!.BlockSizeBytes;
+        var blockSizeBytes = SymmetricalAlgorithm.BlockSizeBytes;
         var countMissingBytes = blockSizeBytes - (data.Length % blockSizeBytes);
         var newArray = new byte[countMissingBytes];
         switch (PaddingMode)
@@ -199,7 +199,7 @@ public class CryptoContext(
             case EncryptMode.Ecb:
                 return block;
             case EncryptMode.Cbc:
-                result = _XorArrayOfBytes(block, prevEncryptedBlock);
+                result = Helper.XorArrayOfBytes(block, prevEncryptedBlock);
                 break;
             case EncryptMode.Pcbc:
                 if (prevBlock is null)
@@ -208,7 +208,7 @@ public class CryptoContext(
                 if (prevBlock.Length != block.Length)
                     throw new InvalidOperationException("prevBlock and block have different length!");
 
-                result = _XorArrayOfBytes(block, prevEncryptedBlock, prevBlock);
+                result = Helper.XorArrayOfBytes(block, prevEncryptedBlock, prevBlock);
                 break;
 
             case EncryptMode.Cfb or EncryptMode.Ofb:
@@ -232,7 +232,7 @@ public class CryptoContext(
                 return encryptedBlock;
 
             case EncryptMode.Cfb or EncryptMode.Ofb or EncryptMode.Ctr or EncryptMode.RandomDelta:
-                return _XorArrayOfBytes(encryptedBlock, block);
+                return Helper.XorArrayOfBytes(encryptedBlock, block);
 
             default:
                 throw new NotImplementedException();
@@ -241,15 +241,15 @@ public class CryptoContext(
 
     private byte[] _BeforeDecrypt(byte[] block, byte[] prevDecryptedBlock, byte[] prevGamma)
     {
-        var blockSizeBytes = SymmetricalAlgorithm!.BlockSizeBytes;
+        var blockSizeBytes = SymmetricalAlgorithm.BlockSizeBytes;
         switch (EncryptMode)
         {
             case EncryptMode.Ecb or EncryptMode.Cbc or EncryptMode.Pcbc:
-                return SymmetricalAlgorithm!.Decrypt(block);
+                return SymmetricalAlgorithm.Decrypt(block);
             case EncryptMode.Cfb:
-                return SymmetricalAlgorithm!.Encrypt(prevDecryptedBlock);
+                return SymmetricalAlgorithm.Encrypt(prevDecryptedBlock);
             case EncryptMode.Ofb:
-                return SymmetricalAlgorithm!.Encrypt(prevGamma);
+                return SymmetricalAlgorithm.Encrypt(prevGamma);
             case EncryptMode.Ctr or EncryptMode.RandomDelta:
                 return _BeforeEncryptOrDecryptCtrAndRandomDelta();
             default:
@@ -259,9 +259,6 @@ public class CryptoContext(
 
     private void _ValidateInputParameters()
     {
-        if (SymmetricalAlgorithm is null)
-            throw new InvalidOperationException("The symmetrical algorithm is not initialized!");
-
         if (
             InitializationVector is null &&
             EncryptMode is EncryptMode.Cbc or EncryptMode.Pcbc or EncryptMode.Cfb or EncryptMode.Ofb
@@ -277,22 +274,7 @@ public class CryptoContext(
             _delta = Parameters[1];
         }
     }
-
-    private byte[] _XorArrayOfBytes(params byte[][] arrays)
-    {
-        var length = arrays[0].Length;
-        var result = new byte[length];
-        for (var i = 0; i < length; ++i)
-        {
-            foreach (var array in arrays)
-            {
-                result[i] ^= array[i];
-            }
-        }
-
-        return result;
-    }
-
+    
     private byte[] _BeforeEncryptOrDecryptCtrAndRandomDelta()
     {
         if (EncryptMode is not (EncryptMode.Ctr or EncryptMode.RandomDelta))
