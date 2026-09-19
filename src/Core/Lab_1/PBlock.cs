@@ -6,7 +6,8 @@ public static class PBlock
     {
         var countBits = array.Length * 8;
         var outputBitLength = pBlock.Length;
-        var result = new byte[array.Length]; // TODO: change length result
+        var outputByteLength = outputBitLength % 8 == 0 ? outputBitLength / 8 : outputBitLength / 8 + 1;
+        var result = new byte[outputByteLength];
 
         for (var i = 0; i < outputBitLength; ++i)
         {
@@ -19,8 +20,8 @@ public static class PBlock
             var bitNumber = indexInLsb0Format % 8;
 
             var correctIndex = rule is IndexBitsRule.FromLsb1 or IndexBitsRule.FromMsb1 ? i + 1 : i;
-            var resultIndexInLsb0 = _ChangeIndexToLsb0(correctIndex, countBits, rule);
-            var resultIndexInMsb0 = _ChangeIndexFromLsb0ToMsb0(resultIndexInLsb0, countBits);
+            var resultIndexInLsb0 = _ChangeIndexToLsb0(correctIndex, outputBitLength, rule);
+            var resultIndexInMsb0 = _ChangeIndexFromLsb0ToMsb0(resultIndexInLsb0, outputBitLength);
 
             var resultByteNumber = resultIndexInMsb0 / 8;
             var resultBitNumber = resultIndexInLsb0 % 8;

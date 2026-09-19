@@ -105,7 +105,7 @@ public class Tests
 
         var actual = PBlock.Permutate(array, pBlock, IndexBitsRule.FromMsb0);
 
-        byte[] expected = [0b_1001_1110, 0b_0000_0000];
+        byte[] expected = [0b_1001_1110];
 
         Assert.That(actual, Is.EqualTo(expected));
     }
@@ -147,7 +147,7 @@ public class Tests
 
         var actual = PBlock.Permutate(array, pBlock, IndexBitsRule.FromMsb0);
 
-        byte[] expected = [0b_11010000];
+        byte[] expected = [0b_1101];
 
         Assert.That(actual, Is.EqualTo(expected));
     }
@@ -161,7 +161,7 @@ public class Tests
 
         var actual = PBlock.Permutate(array, pBlock, IndexBitsRule.FromMsb1);
 
-        byte[] expected = [0b_1001_1110, 0b_0000_0000];
+        byte[] expected = [0b_1001_1110];
 
         Assert.That(actual, Is.EqualTo(expected));
     }
@@ -175,7 +175,7 @@ public class Tests
 
         var actual = PBlock.Permutate(array, pBlock, IndexBitsRule.FromLsb0);
 
-        byte[] expected = [0b_0000_0000, 0b_0100_1011];
+        byte[] expected = [0b_0100_1011];
 
         Assert.That(actual, Is.EqualTo(expected));
     }
@@ -189,7 +189,7 @@ public class Tests
 
         var actual = PBlock.Permutate(array, pBlock, IndexBitsRule.FromLsb1);
 
-        byte[] expected = [0b_0000_0000, 0b_0100_1011];
+        byte[] expected = [0b_0100_1011];
 
         Assert.That(actual, Is.EqualTo(expected));
     }
