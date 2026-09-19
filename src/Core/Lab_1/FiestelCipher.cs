@@ -38,11 +38,15 @@ public class FiestelCipher(IRoundKeysGenerator roundKeysGenerator, IEncryptionRo
             else
             {
                 rightBlock = leftBlock;
-                leftBlock = EncryptionRound.DoEncrypt(tmp, RoundKeys[RoundCount - round]);
+                leftBlock = EncryptionRound.DoEncrypt(tmp, RoundKeys[RoundCount - round - 1]);
             }
 
             block = leftBlock.Concat(rightBlock).ToArray();
         }
+        var endLeftBlock = block[..halfBlockSizeBytes];
+        var endRightBlock = block[halfBlockSizeBytes..];
+        
+        block = endRightBlock.Concat(endLeftBlock).ToArray();
 
         return block;
     }

@@ -19,19 +19,18 @@ public enum PaddingMode
     Iso10126
 }
 
-public class CryptoContext(
+public class CryptoContext<T>(
     byte[] key,
     EncryptMode encryptMode,
     PaddingMode paddingMode,
-    ISymmetricalEncryptDecrypt symmetricalAlgorithm,
     byte[]? initializationVector = null,
     params int[] parameters
-)
+) where T : ISymmetricalEncryptDecrypt
 {
     private byte[] _key = key;
     private EncryptMode EncryptMode => encryptMode;
     private PaddingMode PaddingMode => paddingMode;
-    private ISymmetricalEncryptDecrypt SymmetricalAlgorithm => symmetricalAlgorithm;
+    private ISymmetricalEncryptDecrypt SymmetricalAlgorithm => (ISymmetricalEncryptDecrypt)Activator.CreateInstance(typeof(T), _key)!;
     private byte[]? InitializationVector => initializationVector;
     private int[] Parameters => parameters;
 
@@ -173,7 +172,8 @@ public class CryptoContext(
         {
             case PaddingMode.Zeros:
                 var listData = data.ToList();
-                for (var i = data.Length - 1; i >= 0; --i)
+                var i = data.Length - 1;
+                while (i >= 0 && data[i] == 0)
                     listData.RemoveAt(i);
 
                 return listData.ToArray();
@@ -188,7 +188,7 @@ public class CryptoContext(
 
     private byte[] _BeforeEncrypt(byte[] block, byte[] prevEncryptedBlock, byte[]? prevBlock = null)
     {
-        if (block.Length != prevEncryptedBlock.Length)
+        if (EncryptMode != EncryptMode.Ecb && block.Length != prevEncryptedBlock.Length)
         {
             throw new InvalidOperationException("block and prevEncryptedBlock have different length");
         }

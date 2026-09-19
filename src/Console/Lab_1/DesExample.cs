@@ -6,12 +6,29 @@ public class DesExample
 {
     public static async Task Main(string[] args)
     {
-        byte[] key = [10, 51, 15, 36, 120, 23, 89, 10];
-        var context = new CryptoContext(key, EncryptMode.Ecb, PaddingMode.Zeros, new Des());
+        byte[] key = [1, 35, 69, 103, 137, 171, 205, 239];
+        var context = new CryptoContext<Des>(key, EncryptMode.Ecb, PaddingMode.Zeros);
 
-        byte[] message = [35, 19, 110, 12, 0, 1, 5, 7];
+        byte[] message = [1, 35, 69, 103, 137, 171, 205, 239];
         var encryptedMessage = await context.EncryptAsync(message);
 
-        System.Console.Write(encryptedMessage);
+        foreach (var b in encryptedMessage)
+        {
+            System.Console.Write("[");
+            System.Console.Write(b);
+            System.Console.Write("], ");
+        }
+
+        System.Console.WriteLine();
+        
+        var decryptedMessage = await context.DecryptAsync(encryptedMessage);
+        
+        foreach (var b in decryptedMessage)
+        {
+            System.Console.Write("[");
+            System.Console.Write(b);
+            System.Console.Write("], ");
+        }
+        
     }
 }

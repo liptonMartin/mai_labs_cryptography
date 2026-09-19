@@ -84,8 +84,9 @@ public class FiestelFunction : IEncryptionRound
                 result[indexResult] |= block4Bits;
                 if (indexOperation % 2 == 0)
                     result[indexResult] <<= 4;
-
-                ++indexResult;
+                else
+                    ++indexResult;
+                
                 ++indexOperation;
             }
         }
@@ -146,8 +147,13 @@ public class FiestelFunction : IEncryptionRound
 
 public class Des : ISymmetricalEncryptDecrypt
 {
-    private readonly FiestelCipher _fiestelCipher =
-        new FiestelCipher(new DesRoundKeysGenerator(), new FiestelFunction());
+    private readonly FiestelCipher _fiestelCipher;
+    public Des(byte[] key)
+    {
+        _fiestelCipher = new FiestelCipher(new DesRoundKeysGenerator(), new FiestelFunction());
+        _fiestelCipher.GenerateRoundKeys(key);
+    }
+    
 
     public int BlockSizeBytes { get; } = 8;
 
