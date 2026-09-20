@@ -34,4 +34,20 @@ public static class Helper
         block &= mask;
         return highBits | (((block << shiftInBits) | (block >> (k - shiftInBits))) & mask);
     }
+
+    public static ulong TransformArrayBytesToUlong(byte[] array)
+    {
+        if (array.Length > 8)
+            throw new InvalidOperationException("array have more bytes than ulong");
+
+        ulong block = 0;
+        foreach (var b in array)
+            block = (block << 8) | b;
+        return block;
+    }
+
+    public static byte GetFirstKBits(ulong number, int k)
+    {
+        return (byte)(number >> (sizeof(ulong) * 8 - k));
+    }
 }

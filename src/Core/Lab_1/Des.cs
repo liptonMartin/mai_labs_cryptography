@@ -5,9 +5,7 @@ public class DesRoundKeysGenerator : IRoundKeysGenerator
     public List<byte[]> GenerateRoundKeys(byte[] key)
     {
         var cdBlockBytes = _PermutateByPc_1(key);
-        ulong cdBlock = 0;
-        foreach (var b in cdBlockBytes)
-            cdBlock = (cdBlock << 8) | b;
+        ulong cdBlock = Helper.TransformArrayBytesToUlong(cdBlockBytes);
         var cBlock = (uint)((cdBlock >> 28) & 0x0FFF_FFFF);
         var dBlock = (uint)(cdBlock & 0x0FFF_FFFF);
 
@@ -80,33 +78,23 @@ public class FiestelFunction : IEncryptionRound
         var expandHalfBlock = _ExpandPermutation(halfBlock);
         var xor = Helper.XorArrayOfBytes(expandHalfBlock, roundKey);
 
-        int bitBuffer = 0;
-        var bitCount = 0;
+        var uLongXor = Helper.TransformArrayBytesToUlong(xor);
+        uLongXor <<= 8 * 2; // because xor has 48bit (not enough 2 bytes(2 * 8) to 64 bit (8 bytes ulong))
 
-        var result = new byte[halfBlock.Length];
-        var indexResult = 0;
-        var indexOperation = 0;
-        foreach (var b in xor)
+        var result = new byte[halfBlock.Length]; 
+        for (int i = 0; i < 8; ++i)
         {
-            bitBuffer = (bitBuffer << 8) | b;
-            bitCount += 8;
+            var block6Bits = Helper.GetFirstKBits(uLongXor, 6);
+            uLongXor <<= 6;
 
-            while (bitCount >= 6)
-            {
-                bitCount -= 6;
-                var block6Bits = (byte)((bitBuffer >> 6) & 0b_0011_1111);
-                var block4Bits = _STransformation(block6Bits, indexOperation);
+            var block4Bits = _STransformation(block6Bits, i);
 
-                result[indexResult] |= block4Bits;
-                if (indexOperation % 2 == 0)
-                    result[indexResult] <<= 4;
-                else
-                    ++indexResult;
-
-                ++indexOperation;
-            }
+            var indexResult = i / 2;
+            result[indexResult] |= block4Bits;
+            if (i % 2 == 0)
+                result[indexResult] <<= 4;
         }
-
+            
         return _PPermutation(result);
     }
 
