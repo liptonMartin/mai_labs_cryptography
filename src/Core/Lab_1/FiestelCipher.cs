@@ -32,13 +32,15 @@ public class FiestelCipher(IRoundKeysGenerator roundKeysGenerator, IEncryptionRo
             var tmp = rightBlock;
             if (isEncrypt)
             {
-                rightBlock = EncryptionRound.DoEncrypt(leftBlock, RoundKeys[round]);
+                var fiestelFunctionResult = EncryptionRound.DoEncrypt(rightBlock, RoundKeys[round]);
+                rightBlock = Helper.XorArrayOfBytes(leftBlock, fiestelFunctionResult);
                 leftBlock = tmp;
             }
             else
             {
                 rightBlock = leftBlock;
-                leftBlock = EncryptionRound.DoEncrypt(tmp, RoundKeys[RoundCount - round - 1]);
+                var fiestelFunctionResult = EncryptionRound.DoEncrypt(leftBlock, RoundKeys[RoundCount - round - 1]);
+                leftBlock = Helper.XorArrayOfBytes(tmp, fiestelFunctionResult);
             }
 
             block = leftBlock.Concat(rightBlock).ToArray();
