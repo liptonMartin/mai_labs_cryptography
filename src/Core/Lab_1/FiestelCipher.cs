@@ -20,36 +20,25 @@ public class FiestelCipher(IRoundKeysGenerator roundKeysGenerator, IEncryptionRo
     {
         if (RoundKeys is null)
             throw new InvalidOperationException("Use GenerateRoundKeys method before DoFiestelCipher");
-        
-        var blockSizeBytes = block.Length;
-        var halfBlockSizeBytes = blockSizeBytes / 2;
-            
-        for (var round = 0; round < RoundCount; ++round)
+
+        var halfBlockSizeBytes = block.Length / 2;
+
+        var left = block[..halfBlockSizeBytes];
+        var right = block[halfBlockSizeBytes..];
+
+        for (var round = 0; round < RoundCount; round++)
         {
-            var leftBlock = block[..halfBlockSizeBytes];
-            var rightBlock = block[halfBlockSizeBytes..];
+            var keyIndex = isEncrypt ? round : RoundCount - 1 - round;
 
-            var tmp = rightBlock;
-            if (isEncrypt)
-            {
-                var fiestelFunctionResult = EncryptionRound.DoEncrypt(rightBlock, RoundKeys[round]);
-                rightBlock = Helper.XorArrayOfBytes(leftBlock, fiestelFunctionResult);
-                leftBlock = tmp;
-            }
-            else
-            {
-                rightBlock = leftBlock;
-                var fiestelFunctionResult = EncryptionRound.DoEncrypt(leftBlock, RoundKeys[RoundCount - round - 1]);
-                leftBlock = Helper.XorArrayOfBytes(tmp, fiestelFunctionResult);
-            }
+            var f = EncryptionRound.DoEncrypt(right, RoundKeys[keyIndex]);
 
-            block = leftBlock.Concat(rightBlock).ToArray();
+            var newLeft = right;
+            var newRight = Helper.XorArrayOfBytes(left, f);
+
+            left = newLeft;
+            right = newRight;
         }
-        var endLeftBlock = block[..halfBlockSizeBytes];
-        var endRightBlock = block[halfBlockSizeBytes..];
-        
-        block = endRightBlock.Concat(endLeftBlock).ToArray();
 
-        return block;
+        return right.Concat(left).ToArray();
     }
 }
