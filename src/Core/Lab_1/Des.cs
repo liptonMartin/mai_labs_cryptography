@@ -16,7 +16,7 @@ public class DesRoundKeysGenerator : IRoundKeysGenerator
         for (var i = 1; i <= 16; ++i)
         {
             int countBitShift = 2;
-            if (i is 1 or 2 or 4 or 16) countBitShift = 1;
+            if (i is 1 or 2 or 9 or 16) countBitShift = 1;
 
             cBlock = Helper.CycleLeftShiftKBits(cBlock, countBitShift, 28);
             dBlock = Helper.CycleLeftShiftKBits(dBlock, countBitShift, 28);
