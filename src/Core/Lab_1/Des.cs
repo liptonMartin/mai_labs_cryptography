@@ -4,8 +4,12 @@ public class DesRoundKeysGenerator : IRoundKeysGenerator
 {
     public List<byte[]> GenerateRoundKeys(byte[] key)
     {
-        var cBlock = _GetCBlock(key);
-        var dBlock = _GetDBlock(key);
+        var cdBlockBytes = _PermutateByPc_1(key);
+        ulong cdBlock = 0;
+        foreach (var b in cdBlockBytes)
+            cdBlock = (cdBlock << 8) | b;
+        var cBlock = (uint)((cdBlock >> 28) & 0x0FFF_FFFF);
+        var dBlock = (uint)(cdBlock & 0x0FFF_FFFF);
 
         List<byte[]> roundKeys = [];
 
@@ -14,10 +18,14 @@ public class DesRoundKeysGenerator : IRoundKeysGenerator
             int countBitShift = 2;
             if (i is 1 or 2 or 4 or 16) countBitShift = 1;
 
-            cBlock = Helper.CycleLeftShift(cBlock, countBitShift);
-            dBlock = Helper.CycleLeftShift(dBlock, countBitShift);
-            var concatenatedCd = cBlock.Concat(dBlock).ToArray();
-            var roundKey = _PermutateByPc_2(concatenatedCd);
+            cBlock = Helper.CycleLeftShiftKBits(cBlock, countBitShift, 28);
+            dBlock = Helper.CycleLeftShiftKBits(dBlock, countBitShift, 28);
+
+            var ulongCBlock = (ulong)cBlock << 28;
+            var ulongDBlock = (ulong)dBlock;
+            cdBlock = ulongCBlock | ulongDBlock;
+
+            var roundKey = _PermutateByPc_2(cdBlock);
 
             roundKeys.Add(roundKey);
         }
@@ -25,35 +33,43 @@ public class DesRoundKeysGenerator : IRoundKeysGenerator
         return roundKeys;
     }
 
-    private byte[] _GetCBlock(byte[] key)
+    private byte[] _PermutateByPc_1(byte[] block)
     {
         byte[] pBlock =
         [
-            57, 49, 41, 33, 25, 17, 9, 1, 58, 50, 42, 34, 26, 18, 10, 2, 59, 51, 43, 35, 27, 19, 11, 3, 60, 52, 44, 36
+            57, 49, 41, 33, 25, 17, 9,
+            1, 58, 50, 42, 34, 26, 18,
+            10, 2, 59, 51, 43, 35, 27,
+            19, 11, 3, 60, 52, 44, 36,
+            63, 55, 47, 39, 31, 23, 15,
+            7, 62, 54, 46, 38, 30, 22,
+            14, 6, 61, 53, 45, 37, 29,
+            21, 13, 5, 28, 20, 12, 4,
         ];
 
-        return PBlock.Permutate(key, pBlock, IndexBitsRule.FromMsb1);
+        return PBlock.Permutate(block, pBlock, IndexBitsRule.FromMsb1);
     }
 
-    private byte[] _GetDBlock(byte[] key)
-    {
-        byte[] pBlock =
-        [
-            63, 55, 47, 39, 31, 23, 15, 7, 62, 54, 46, 38, 30, 22, 14, 6, 61, 53, 45, 37, 29, 21, 13, 5, 28, 20, 12
-        ];
 
-        return PBlock.Permutate(key, pBlock, IndexBitsRule.FromMsb1);
-    }
-
-    private byte[] _PermutateByPc_2(byte[] block)
+    private byte[] _PermutateByPc_2(ulong block)
     {
+        var blockBytes = new byte[8];
+        block <<= 8; // because we have only 7 bytes in ulong (8 bytes)
+        for (var i = sizeof(ulong) - 1; i >= 1; --i)
+        {
+            var countBits = i * 8;
+            var iByte = block & (255UL << countBits);
+            var index = 7 - i;
+            blockBytes[index] = (byte)(iByte >> countBits);
+        }
+
         byte[] pBlock =
         [
             14, 17, 11, 24, 1, 5, 3, 28, 15, 6, 21, 10, 23, 19, 12, 4, 26, 8, 16, 7, 27, 20, 13, 2, 41, 52, 31, 37, 47,
             55, 30, 40, 51, 45, 33, 48, 44, 49, 39, 56, 34, 53, 46, 42, 50, 36, 29, 32
         ];
 
-        return PBlock.Permutate(block, pBlock, IndexBitsRule.FromMsb1);
+        return PBlock.Permutate(blockBytes, pBlock, IndexBitsRule.FromMsb1);
     }
 }
 
@@ -86,7 +102,7 @@ public class FiestelFunction : IEncryptionRound
                     result[indexResult] <<= 4;
                 else
                     ++indexResult;
-                
+
                 ++indexOperation;
             }
         }
@@ -148,12 +164,13 @@ public class FiestelFunction : IEncryptionRound
 public class Des : ISymmetricalEncryptDecrypt
 {
     private readonly FiestelCipher _fiestelCipher;
+
     public Des(byte[] key)
     {
         _fiestelCipher = new FiestelCipher(new DesRoundKeysGenerator(), new FiestelFunction());
         _fiestelCipher.GenerateRoundKeys(key);
     }
-    
+
 
     public int BlockSizeBytes { get; } = 8;
 

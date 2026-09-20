@@ -19,13 +19,19 @@ public static class Helper
         return result;
     }
     
-    public static byte[] CycleLeftShift(byte[] block, int shiftInBits)
+    public static uint CycleLeftShiftKBits(uint block, int shiftInBits, int k)
     {
-        var number = new BigInteger(block, isUnsigned: true);
-        var blockSizeBits = block.Length * 8;
-        var highBits = number >> (blockSizeBits - shiftInBits);
-        var lowBits = number << shiftInBits;
-        var result = highBits | lowBits;
-        return result.ToByteArray();
+        // shift only k bits, first (n - k) bits remain on its places
+        if (k is < 1 or > 32)
+            throw new ArgumentOutOfRangeException(nameof(k));
+        if (shiftInBits < 0)
+            throw new ArgumentOutOfRangeException(nameof(shiftInBits));
+
+        shiftInBits %= k;
+        
+        var mask = (1u << k) - 1;
+        var highBits = block & ~mask;
+        block &= mask;
+        return highBits | (((block << shiftInBits) | (block >> (k - shiftInBits))) & mask);
     }
 }
