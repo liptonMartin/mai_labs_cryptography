@@ -1,8 +1,8 @@
 ﻿using Core.Lab_1;
 
-namespace Tests.Tests_Lab_1.Tests_Lab_1_1;
+namespace Tests.Tests_Lab_1;
 
-public class Tests
+public class TestPBlock
 {
     [SetUp]
     public void Setup()
