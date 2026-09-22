@@ -30,32 +30,52 @@ public class CryptoContext<T>(
     private byte[] _key = key;
     private EncryptMode EncryptMode => encryptMode;
     private PaddingMode PaddingMode => paddingMode;
-    private ISymmetricalEncryptDecrypt SymmetricalAlgorithm => (ISymmetricalEncryptDecrypt)Activator.CreateInstance(typeof(T), _key)!;
+
+    private ISymmetricalEncryptDecrypt SymmetricalAlgorithm =>
+        (ISymmetricalEncryptDecrypt)Activator.CreateInstance(typeof(T), _key)!;
+
     private byte[]? InitializationVector => initializationVector;
     private int[] Parameters => parameters;
 
     private int? _counter;
     private int? _delta;
-    
+
     public void Encrypt(byte[] data, ref byte[] outputBlock) => outputBlock = _Encrypt(data);
     public void Decrypt(byte[] data, ref byte[] outputBlock) => outputBlock = _Decrypt(data);
 
-    public async Task EncryptAsync(string inputFile, string outputFile)
-    {
-        var data = await File.ReadAllBytesAsync(inputFile);
-        var encrypted = await EncryptAsync(data);
-        await File.WriteAllBytesAsync(outputFile, encrypted);
-    }
+    public async Task EncryptAsync(string inputFilePath, string outputFilePath)
+        => await _EncryptDecryptFilesAsync(inputFilePath, outputFilePath, EncryptAsync);
 
-    public async Task DecryptAsync(string inputFile, string outputFile)
-    {
-        var data = await File.ReadAllBytesAsync(inputFile);
-        var decrypted = await DecryptAsync(data);
-        await File.WriteAllBytesAsync(outputFile, decrypted);
-    }
+    public async Task DecryptAsync(string inputFilePath, string outputFilePath)
+        => await _EncryptDecryptFilesAsync(inputFilePath, outputFilePath, DecryptAsync);
 
     public Task<byte[]> EncryptAsync(byte[] data) => Task.Run(() => _Encrypt(data));
     public Task<byte[]> DecryptAsync(byte[] data) => Task.Run(() => _Decrypt(data));
+
+    private async Task _EncryptDecryptFilesAsync(
+        string inputFilePath, string outputFilePath, Func<byte[], Task<byte[]>> asyncMethod
+    )
+    {
+        await using var inputFile = new FileStream(
+            inputFilePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 4096, useAsync: true
+        );
+        await using var outputFile = new FileStream(
+            outputFilePath, FileMode.Open, FileAccess.Write, FileShare.Read, bufferSize: 4096, useAsync: true
+        );
+
+        var buffer = new byte[SymmetricalAlgorithm.BlockSizeBytes];
+        while (true)
+        {
+            var read = await inputFile.ReadAsync(buffer);
+            if (read == 0)
+                break;
+
+            var block = read == buffer.Length ? buffer : buffer[..read];
+
+            var encrypted = await asyncMethod(block);
+            await outputFile.WriteAsync(encrypted);
+        }
+    }
 
     private byte[] _Encrypt(byte[] data)
     {
@@ -274,12 +294,12 @@ public class CryptoContext<T>(
             _delta = Parameters[1];
         }
     }
-    
+
     private byte[] _BeforeEncryptOrDecryptCtrAndRandomDelta()
     {
         if (EncryptMode is not (EncryptMode.Ctr or EncryptMode.RandomDelta))
             throw new InvalidOperationException("Invalid use of method _BeforeEncryptOrDecryptCtrAndRandomDelta");
-        
+
         if (_counter is null || _delta is null)
             throw new InvalidOperationException(
                 "The counter or delta is null for Random delta encryption mode");
