@@ -12,7 +12,7 @@ public static class Console
         {
             ["1"] = new LabAction(
                 "Шифрование/расшифровка примера (ECB, Zeros)",
-                () => DesExample.BaseDes(Array.Empty<string>())
+                () => DesExamples.BaseDes()
             ),
         }),
     };
