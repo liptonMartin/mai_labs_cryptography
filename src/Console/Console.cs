@@ -11,9 +11,13 @@ public static class Console
         ["1"] = ("Lab 1. DES", new()
         {
             ["1"] = new LabAction(
-                "Шифрование/расшифровка примера (ECB, Zeros)",
-                () => DesExamples.BaseDes()
+                "Шифрование/расшифровка примера",
+                () => DesExamples.DesEcbZeros()
             ),
+            ["2"] = new LabAction(
+                "Шифрование/расшифровка примера из файла",
+                () => DesExamples.DesEcbZerosFromFile()
+                ),
         }),
     };
 

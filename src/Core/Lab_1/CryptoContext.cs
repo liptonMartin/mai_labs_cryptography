@@ -60,7 +60,7 @@ public class CryptoContext<T>(
             inputFilePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 4096, useAsync: true
         );
         await using var outputFile = new FileStream(
-            outputFilePath, FileMode.Open, FileAccess.Write, FileShare.Read, bufferSize: 4096, useAsync: true
+            outputFilePath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read, bufferSize: 4096, useAsync: true
         );
 
         var buffer = new byte[SymmetricalAlgorithm.BlockSizeBytes];
@@ -194,7 +194,10 @@ public class CryptoContext<T>(
                 var listData = data.ToList();
                 var i = data.Length - 1;
                 while (i >= 0 && data[i] == 0)
+                {
                     listData.RemoveAt(i);
+                    --i;
+                }
 
                 return listData.ToArray();
             case PaddingMode.AnsiX923 or PaddingMode.Pkcs7 or PaddingMode.Iso10126:
