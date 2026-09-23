@@ -17,7 +17,11 @@ public static class Console
             ["2"] = new LabAction(
                 "Шифрование/расшифровка примера из файла",
                 () => DesExamples.DesEcbZerosFromFile()
-                ),
+            ),
+            ["3"] = new LabAction(
+                "Шифрование/расшифровка с выбором режимов шифрования и padding",
+                () => DesExamples.DesChooseModes()
+            ),
         }),
     };
 
@@ -52,7 +56,7 @@ public static class Console
                     System.Console.WriteLine($"Ошибка: {ex.Message}");
                     System.Console.ResetColor();
                 }
-                
+
                 System.Console.WriteLine();
                 System.Console.WriteLine(new string('─', 60));
                 System.Console.WriteLine();
