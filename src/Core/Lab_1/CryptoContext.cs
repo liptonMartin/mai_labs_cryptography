@@ -305,13 +305,18 @@ public class CryptoContext<T>(
     private byte[] _BeforeEncryptOrDecryptCtrAndRandomDelta()
     {
         if (EncryptMode is not (EncryptMode.Ctr or EncryptMode.RandomDelta))
-            throw new InvalidOperationException("Invalid use of method _BeforeEncryptOrDecryptCtrAndRandomDelta");
+            throw new InvalidOperationException(
+                $"Invalid use of method {nameof(_BeforeEncryptOrDecryptCtrAndRandomDelta)}"
+            );
 
-        if (_counter is null || _delta is null)
+        if (encryptMode is EncryptMode.Ctr && _counter is null)
+            throw new InvalidOperationException("The counter is null for CTR encryption mode");
+
+        if (EncryptMode is EncryptMode.RandomDelta && (_counter is null || _delta is null))
             throw new InvalidOperationException("The counter or delta is null for Random delta encryption mode");
 
-        var counterBytes = BitConverter.GetBytes(_counter.Value);
-        var blockSizeBytes = SymmetricalAlgorithm!.BlockSizeBytes;
+        var counterBytes = BitConverter.GetBytes(_counter!.Value);
+        var blockSizeBytes = SymmetricalAlgorithm.BlockSizeBytes;
         Array.Resize(ref counterBytes, blockSizeBytes);
         if (EncryptMode == EncryptMode.Ctr)
             ++_counter;
