@@ -5,7 +5,7 @@ public class DesRoundKeysGenerator : IRoundKeysGenerator
     public List<byte[]> GenerateRoundKeys(byte[] key)
     {
         var cdBlockBytes = _PermutateByPc_1(key);
-        ulong cdBlock = Helper.TransformArrayBytesToUlong(cdBlockBytes);
+        ulong cdBlock = Helper.TransformArrayBytesBigEndianToUlong(cdBlockBytes);
         var cBlock = (uint)((cdBlock >> 28) & 0x0FFF_FFFF);
         var dBlock = (uint)(cdBlock & 0x0FFF_FFFF);
 
@@ -78,7 +78,7 @@ public class FiestelFunction : IEncryptionRound
         var expandHalfBlock = _ExpandPermutation(halfBlock);
         var xor = Helper.XorArrayOfBytes(expandHalfBlock, roundKey);
 
-        var uLongXor = Helper.TransformArrayBytesToUlong(xor);
+        var uLongXor = Helper.TransformArrayBytesBigEndianToUlong(xor);
         uLongXor <<= 8 * 2; // because xor has 48bit (not enough 2 bytes(2 * 8) to 64 bit (8 bytes ulong))
 
         var result = new byte[halfBlock.Length]; 

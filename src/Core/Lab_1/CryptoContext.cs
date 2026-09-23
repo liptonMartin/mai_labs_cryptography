@@ -37,8 +37,8 @@ public class CryptoContext<T>(
     private byte[]? InitializationVector => initializationVector;
     private int[] Parameters => parameters;
 
-    private int? _counter;
-    private int? _delta;
+    private ulong? _counter;
+    private uint? _delta;
 
     public void Encrypt(byte[] data, ref byte[] outputBlock) => outputBlock = _Encrypt(data);
     public void Decrypt(byte[] data, ref byte[] outputBlock) => outputBlock = _Decrypt(data);
@@ -284,17 +284,21 @@ public class CryptoContext<T>(
     {
         if (
             InitializationVector is null &&
-            EncryptMode is EncryptMode.Cbc or EncryptMode.Pcbc or EncryptMode.Cfb or EncryptMode.Ofb
+            EncryptMode is EncryptMode.Cbc or EncryptMode.Pcbc or EncryptMode.Cfb or EncryptMode.Ofb or EncryptMode.Ctr
+                or EncryptMode.RandomDelta
         )
             throw new InvalidOperationException("Initializer vector is null");
 
         if (EncryptMode == EncryptMode.Ctr)
-            _counter = Parameters[0];
+            _counter = Helper.TransformArrayBytesBigEndianToUint(InitializationVector!);
 
         if (EncryptMode == EncryptMode.RandomDelta)
         {
-            _counter = Parameters[0];
-            _delta = Parameters[1];
+            _counter = Helper.TransformArrayBytesBigEndianToUint(InitializationVector!);
+            _delta = (uint)(_counter >> (sizeof(byte) * 4));
+
+            if (_delta % 2 == 0)
+                ++_delta;
         }
     }
 
@@ -304,8 +308,7 @@ public class CryptoContext<T>(
             throw new InvalidOperationException("Invalid use of method _BeforeEncryptOrDecryptCtrAndRandomDelta");
 
         if (_counter is null || _delta is null)
-            throw new InvalidOperationException(
-                "The counter or delta is null for Random delta encryption mode");
+            throw new InvalidOperationException("The counter or delta is null for Random delta encryption mode");
 
         var counterBytes = BitConverter.GetBytes(_counter.Value);
         var blockSizeBytes = SymmetricalAlgorithm!.BlockSizeBytes;
