@@ -117,7 +117,7 @@ public class CryptoContext<T>(
 
         var prevDecryptedBlock = InitializationVector!;
         var prevGamma = InitializationVector!;
-        var prevEncryptedBlock = InitializationVector!;
+        var prevEncryptedBlock = encryptMode is EncryptMode.Pcbc ? new byte[8] : InitializationVector!;
         for (var offset = 0; offset < data.Length; offset += blockSizeBytes)
         {
             var endBlock = offset + blockSizeBytes;
@@ -128,6 +128,7 @@ public class CryptoContext<T>(
 
             prevDecryptedBlock = decryptedBlock;
             prevEncryptedBlock = block;
+            prevGamma = gamma;
 
             decryptedData.Add(decryptedBlock);
         }
