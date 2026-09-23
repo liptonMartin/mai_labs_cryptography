@@ -290,11 +290,11 @@ public class CryptoContext<T>(
             throw new InvalidOperationException("Initializer vector is null");
 
         if (EncryptMode == EncryptMode.Ctr)
-            _counter = Helper.TransformArrayBytesBigEndianToUint(InitializationVector!);
+            _counter = Helper.TransformArrayBytesBigEndianToUlong(InitializationVector!);
 
         if (EncryptMode == EncryptMode.RandomDelta)
         {
-            _counter = Helper.TransformArrayBytesBigEndianToUint(InitializationVector!);
+            _counter = Helper.TransformArrayBytesBigEndianToUlong(InitializationVector!);
             _delta = (uint)(_counter >> (sizeof(byte) * 4));
 
             if (_delta % 2 == 0)
