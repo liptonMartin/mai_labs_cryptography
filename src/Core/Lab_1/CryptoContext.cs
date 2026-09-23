@@ -87,7 +87,7 @@ public class CryptoContext<T>(
         var blockSizeBytes = SymmetricalAlgorithm.BlockSizeBytes;
 
         var prevEncryptedBlock = InitializationVector!;
-        byte[]? prevBlock = null;
+        var prevBlock = new byte[8];
 
         for (var offset = 0; offset < data.Length; offset += blockSizeBytes)
         {
@@ -117,7 +117,7 @@ public class CryptoContext<T>(
 
         var prevDecryptedBlock = InitializationVector!;
         var prevGamma = InitializationVector!;
-        var prevEncryptedBlock = new byte[blockSizeBytes];
+        var prevEncryptedBlock = InitializationVector!;
         for (var offset = 0; offset < data.Length; offset += blockSizeBytes)
         {
             var endBlock = offset + blockSizeBytes;
@@ -136,8 +136,9 @@ public class CryptoContext<T>(
         return _RemovePadding(decryptedDataArray);
     }
 
-    private byte[] _DoDecrypt(byte[] block, byte[] gamma, byte[] prevEncryptedBlock,
-        byte[] prevDecryptedBlock)
+    private byte[] _DoDecrypt(
+        byte[] block, byte[] gamma, byte[] prevEncryptedBlock, byte[] prevDecryptedBlock
+    )
     {
         switch (EncryptMode)
         {
@@ -209,7 +210,7 @@ public class CryptoContext<T>(
         }
     }
 
-    private byte[] _BeforeEncrypt(byte[] block, byte[] prevEncryptedBlock, byte[]? prevBlock = null)
+    private byte[] _BeforeEncrypt(byte[] block, byte[] prevEncryptedBlock, byte[] prevBlock)
     {
         if (EncryptMode != EncryptMode.Ecb && block.Length != prevEncryptedBlock.Length)
         {
@@ -264,7 +265,6 @@ public class CryptoContext<T>(
 
     private byte[] _BeforeDecrypt(byte[] block, byte[] prevDecryptedBlock, byte[] prevGamma)
     {
-        var blockSizeBytes = SymmetricalAlgorithm.BlockSizeBytes;
         switch (EncryptMode)
         {
             case EncryptMode.Ecb or EncryptMode.Cbc or EncryptMode.Pcbc:
