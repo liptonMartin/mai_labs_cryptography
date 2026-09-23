@@ -238,7 +238,7 @@ public class CryptoContext<T>(
                 return prevEncryptedBlock;
 
             case EncryptMode.Ctr or EncryptMode.RandomDelta:
-                return _BeforeEncryptOrDecryptCtrAndRandomDelta();
+                return _BeforeEncryptCtrAndRandomDelta();
         }
 
         return result;
@@ -274,7 +274,7 @@ public class CryptoContext<T>(
             case EncryptMode.Ofb:
                 return SymmetricalAlgorithm.Encrypt(prevGamma);
             case EncryptMode.Ctr or EncryptMode.RandomDelta:
-                return _BeforeEncryptOrDecryptCtrAndRandomDelta();
+                return _BeforeDecryptCtrAndRandomDelta();
             default:
                 throw new NotImplementedException();
         }
@@ -302,18 +302,9 @@ public class CryptoContext<T>(
         }
     }
 
-    private byte[] _BeforeEncryptOrDecryptCtrAndRandomDelta()
+    private byte[] _BeforeEncryptCtrAndRandomDelta()
     {
-        if (EncryptMode is not (EncryptMode.Ctr or EncryptMode.RandomDelta))
-            throw new InvalidOperationException(
-                $"Invalid use of method {nameof(_BeforeEncryptOrDecryptCtrAndRandomDelta)}"
-            );
-
-        if (encryptMode is EncryptMode.Ctr && _counter is null)
-            throw new InvalidOperationException("The counter is null for CTR encryption mode");
-
-        if (EncryptMode is EncryptMode.RandomDelta && (_counter is null || _delta is null))
-            throw new InvalidOperationException("The counter or delta is null for Random delta encryption mode");
+        _ValidateEncryptDecryptCtrAndRandomDelta();
 
         var counterBytes = BitConverter.GetBytes(_counter!.Value);
         var blockSizeBytes = SymmetricalAlgorithm.BlockSizeBytes;
@@ -323,5 +314,33 @@ public class CryptoContext<T>(
         else
             _counter += _delta;
         return counterBytes;
+    }
+
+    private byte[] _BeforeDecryptCtrAndRandomDelta()
+    {
+        _ValidateEncryptDecryptCtrAndRandomDelta();
+
+        var counterBytes = BitConverter.GetBytes(_counter!.Value);
+        var blockSizeBytes = SymmetricalAlgorithm.BlockSizeBytes;
+        Array.Resize(ref counterBytes, blockSizeBytes);
+        if (EncryptMode == EncryptMode.Ctr)
+            ++_counter;
+        else
+            _counter += _delta;
+        return SymmetricalAlgorithm.Encrypt(counterBytes);
+    }
+
+    private void _ValidateEncryptDecryptCtrAndRandomDelta()
+    {
+        if (EncryptMode is not (EncryptMode.Ctr or EncryptMode.RandomDelta))
+            throw new InvalidOperationException(
+                $"Invalid use of method {nameof(_ValidateEncryptDecryptCtrAndRandomDelta)}"
+            );
+
+        if (encryptMode is EncryptMode.Ctr && _counter is null)
+            throw new InvalidOperationException("The counter is null for CTR encryption mode");
+
+        if (EncryptMode is EncryptMode.RandomDelta && (_counter is null || _delta is null))
+            throw new InvalidOperationException("The counter or delta is null for Random delta encryption mode");
     }
 }
