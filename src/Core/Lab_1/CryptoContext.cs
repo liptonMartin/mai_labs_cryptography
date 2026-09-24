@@ -159,12 +159,15 @@ public class CryptoContext<T>(
     private byte[] _AddPadding(byte[] data)
     {
         var blockSizeBytes = SymmetricalAlgorithm.BlockSizeBytes;
+
+        if (data.Length % blockSizeBytes == 0)
+            return data;
+
         var countMissingBytes = blockSizeBytes - (data.Length % blockSizeBytes);
         var newArray = new byte[countMissingBytes];
         switch (PaddingMode)
         {
             case PaddingMode.Zeros:
-                if (countMissingBytes == blockSizeBytes) return data; // not required add empty block
                 break;
             case PaddingMode.AnsiX923:
                 newArray[^1] = (byte)countMissingBytes;
@@ -204,7 +207,8 @@ public class CryptoContext<T>(
                 return listData.ToArray();
             case PaddingMode.AnsiX923 or PaddingMode.Pkcs7 or PaddingMode.Iso10126:
                 var countToDelete = data[^1];
-                return data[..^countToDelete];
+                var blockSizeBytes = SymmetricalAlgorithm.BlockSizeBytes;
+                return countToDelete < blockSizeBytes ? data[..^countToDelete] : data;
 
             default:
                 throw new NotImplementedException("Unknown padding mode!");
