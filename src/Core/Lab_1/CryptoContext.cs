@@ -19,6 +19,18 @@ public enum PaddingMode
     Iso10126
 }
 
+public struct EncryptBlocks(byte[] encryptedBlock, byte[] afterEncryptBlock)
+{
+    public readonly byte[] EncryptedBlock = encryptedBlock;
+    public readonly byte[] AfterEncryptBlock = afterEncryptBlock;
+}
+
+public struct DecryptBlocks(byte[] gamma, byte[] decryptedBlock)
+{
+    public readonly byte[] Gamma = gamma;
+    public readonly byte[] DecryptedBlock = decryptedBlock;
+}
+
 public class CryptoContext<T>(
     byte[] key,
     EncryptMode encryptMode,
@@ -40,17 +52,15 @@ public class CryptoContext<T>(
     private ulong? _counter;
     private uint? _delta;
 
-    public void Encrypt(byte[] data, ref byte[] outputBlock) => outputBlock = _Encrypt(data);
-    public void Decrypt(byte[] data, ref byte[] outputBlock) => outputBlock = _Decrypt(data);
+    public async Task<byte[]> EncryptAsync(byte[] data) => await _Encrypt(data);
+
+    public async Task<byte[]> DecryptAsync(byte[] data) => await _Decrypt(data);
 
     public async Task EncryptAsync(string inputFilePath, string outputFilePath)
         => await _EncryptDecryptFilesAsync(inputFilePath, outputFilePath, EncryptAsync);
 
     public async Task DecryptAsync(string inputFilePath, string outputFilePath)
         => await _EncryptDecryptFilesAsync(inputFilePath, outputFilePath, DecryptAsync);
-
-    public Task<byte[]> EncryptAsync(byte[] data) => Task.Run(() => _Encrypt(data));
-    public Task<byte[]> DecryptAsync(byte[] data) => Task.Run(() => _Decrypt(data));
 
     private async Task _EncryptDecryptFilesAsync(
         string inputFilePath, string outputFilePath, Func<byte[], Task<byte[]>> asyncMethod
@@ -77,78 +87,42 @@ public class CryptoContext<T>(
         }
     }
 
-    private byte[] _Encrypt(byte[] data)
+    private async Task<byte[]> _Encrypt(byte[] data)
     {
         _ValidateInputParameters();
-
         data = _AddPadding(data);
-
-        List<byte[]> encryptedData = [];
-        var blockSizeBytes = SymmetricalAlgorithm.BlockSizeBytes;
-
-        var prevEncryptedBlock = InitializationVector!;
-        var prevBlock = new byte[8];
-
-        for (var offset = 0; offset < data.Length; offset += blockSizeBytes)
-        {
-            var endBlock = offset + blockSizeBytes;
-            var block = data[offset..endBlock];
-
-            var gamma = _BeforeEncrypt(block, prevEncryptedBlock, prevBlock);
-            var encryptedBlock = SymmetricalAlgorithm.Encrypt(gamma);
-
-            var afterEncrypt = _AfterEncrypt(encryptedBlock, block);
-            encryptedData.Add(afterEncrypt);
-
-            prevEncryptedBlock = encryptedBlock;
-            prevBlock = block;
-        }
-
-        return encryptedData.SelectMany(x => x).ToArray();
+        if (_isParallelEncrypt())
+            return await _ParallelEncrypt(data);
+        return _NonParallelEncrypt(data);
     }
 
-    private byte[] _Decrypt(byte[] data)
+    private async Task<byte[]> _Decrypt(byte[] data)
     {
         _ValidateInputParameters();
-
-        List<byte[]> decryptedData = [];
-        var blockSizeBytes = SymmetricalAlgorithm.BlockSizeBytes;
-
-
-        var prevDecryptedBlock = InitializationVector!;
-        var prevGamma = InitializationVector!;
-        var prevEncryptedBlock = encryptMode is EncryptMode.Pcbc ? new byte[8] : InitializationVector!;
-        for (var offset = 0; offset < data.Length; offset += blockSizeBytes)
+        if (_isParallelDecrypt())
         {
-            var endBlock = offset + blockSizeBytes;
-            var block = data[offset..endBlock];
-
-            var gamma = _BeforeDecrypt(block, prevDecryptedBlock, prevGamma);
-            var decryptedBlock = _DoDecrypt(block, gamma, prevEncryptedBlock, prevDecryptedBlock);
-
-            prevDecryptedBlock = decryptedBlock;
-            prevEncryptedBlock = block;
-            prevGamma = gamma;
-
-            decryptedData.Add(decryptedBlock);
+            var result = await _ParallelDecrypt(data);
+            return _RemovePadding(result);
         }
 
-        var decryptedDataArray = decryptedData.SelectMany(x => x).ToArray();
-        return _RemovePadding(decryptedDataArray);
+        return _RemovePadding(_NonParallelDecrypt(data));
     }
 
     private byte[] _DoDecrypt(
-        byte[] block, byte[] gamma, byte[] prevEncryptedBlock, byte[] prevDecryptedBlock
+        byte[] block, byte[] gamma, byte[] prevEncryptedBlock, byte[]? prevDecryptedBlock = null
     )
     {
+        if (!_isParallelDecrypt() && prevDecryptedBlock is null)
+            throw new InvalidOperationException("prevDecryptedBlock are required for non parallel operations");
+
         switch (EncryptMode)
         {
             case EncryptMode.Ecb:
                 return gamma;
             case EncryptMode.Cbc:
-                return Helper.XorArrayOfBytes(gamma, prevEncryptedBlock);
+                return Helper.XorArrayOfBytes(gamma, prevEncryptedBlock!);
             case EncryptMode.Pcbc:
-                return Helper.XorArrayOfBytes(gamma, prevEncryptedBlock, prevDecryptedBlock);
+                return Helper.XorArrayOfBytes(gamma, prevEncryptedBlock!, prevDecryptedBlock!);
             case EncryptMode.Cfb or EncryptMode.Ofb or EncryptMode.Ctr or EncryptMode.RandomDelta:
                 return Helper.XorArrayOfBytes(gamma, block);
             default:
@@ -215,12 +189,15 @@ public class CryptoContext<T>(
         }
     }
 
-    private byte[] _BeforeEncrypt(byte[] block, byte[] prevEncryptedBlock, byte[] prevBlock)
+    private byte[] _BeforeEncrypt(byte[] block, byte[]? prevEncryptedBlock = null, byte[]? prevBlock = null)
     {
-        if (EncryptMode != EncryptMode.Ecb && block.Length != prevEncryptedBlock.Length)
-        {
+        if (!_isParallelEncrypt() && (prevEncryptedBlock is null || prevBlock is null))
+            throw new InvalidOperationException(
+                "prevEncryptedBlock and prevBlock are required for non parallel operations"
+            );
+
+        if (EncryptMode != EncryptMode.Ecb && block.Length != prevEncryptedBlock?.Length)
             throw new InvalidOperationException("block and prevEncryptedBlock have different length");
-        }
 
         var result = new byte[block.Length];
         switch (EncryptMode)
@@ -228,20 +205,17 @@ public class CryptoContext<T>(
             case EncryptMode.Ecb:
                 return block;
             case EncryptMode.Cbc:
-                result = Helper.XorArrayOfBytes(block, prevEncryptedBlock);
+                result = Helper.XorArrayOfBytes(block, prevEncryptedBlock!);
                 break;
             case EncryptMode.Pcbc:
-                if (prevBlock is null)
-                    throw new InvalidOperationException("Encrypt mode is PCBC and prevBlock is null");
-
-                if (prevBlock.Length != block.Length)
+                if (prevBlock!.Length != block.Length)
                     throw new InvalidOperationException("prevBlock and block have different length!");
 
-                result = Helper.XorArrayOfBytes(block, prevEncryptedBlock, prevBlock);
+                result = Helper.XorArrayOfBytes(block, prevEncryptedBlock!, prevBlock);
                 break;
 
             case EncryptMode.Cfb or EncryptMode.Ofb:
-                return prevEncryptedBlock;
+                return prevEncryptedBlock!;
 
             case EncryptMode.Ctr or EncryptMode.RandomDelta:
                 return _BeforeEncryptCtrAndRandomDelta();
@@ -268,16 +242,21 @@ public class CryptoContext<T>(
         }
     }
 
-    private byte[] _BeforeDecrypt(byte[] block, byte[] prevDecryptedBlock, byte[] prevGamma)
+    private byte[] _BeforeDecrypt(byte[] block, byte[]? prevDecryptedBlock = null, byte[]? prevGamma = null)
     {
+        if (!_isParallelDecrypt() && (prevDecryptedBlock is null || prevGamma is null))
+            throw new InvalidOperationException(
+                "prevDecryptedBlock and prevGamma are required for non parallel operations"
+            );
+
         switch (EncryptMode)
         {
             case EncryptMode.Ecb or EncryptMode.Cbc or EncryptMode.Pcbc:
                 return SymmetricalAlgorithm.Decrypt(block);
             case EncryptMode.Cfb:
-                return SymmetricalAlgorithm.Encrypt(prevDecryptedBlock);
+                return SymmetricalAlgorithm.Encrypt(prevDecryptedBlock!);
             case EncryptMode.Ofb:
-                return SymmetricalAlgorithm.Encrypt(prevGamma);
+                return SymmetricalAlgorithm.Encrypt(prevGamma!);
             case EncryptMode.Ctr or EncryptMode.RandomDelta:
                 return _BeforeDecryptCtrAndRandomDelta();
             default:
@@ -348,4 +327,122 @@ public class CryptoContext<T>(
         if (EncryptMode is EncryptMode.RandomDelta && (_counter is null || _delta is null))
             throw new InvalidOperationException("The counter or delta is null for Random delta encryption mode");
     }
+
+    private byte[] _NonParallelEncrypt(byte[] data)
+    {
+        var blockSizeBytes = SymmetricalAlgorithm.BlockSizeBytes;
+        List<byte[]> encryptedData = [];
+
+        var prevEncryptedBlock = InitializationVector!;
+        var prevBlock = new byte[8];
+
+        for (var offset = 0; offset < data.Length; offset += blockSizeBytes)
+        {
+            var endBlock = offset + blockSizeBytes;
+            var block = data[offset..endBlock];
+
+            var encryptedBlocks = _EncryptStep(block, prevEncryptedBlock, prevBlock);
+            encryptedData.Add(encryptedBlocks.AfterEncryptBlock);
+
+            prevEncryptedBlock = encryptedBlocks.EncryptedBlock;
+            prevBlock = block;
+        }
+
+        return encryptedData.SelectMany(x => x).ToArray();
+    }
+
+    private async Task<byte[]> _ParallelEncrypt(byte[] data)
+    {
+        var blockSizeBytes = SymmetricalAlgorithm.BlockSizeBytes;
+        var countBlocks = data.Length / blockSizeBytes;
+        var encryptedDataTasks = new Task<byte[]>[countBlocks];
+
+        for (var i = 0; i < countBlocks; ++i)
+        {
+            var offset = i * blockSizeBytes;
+            var endBlock = offset + blockSizeBytes;
+            var block = data[offset..endBlock];
+
+            encryptedDataTasks[i] = Task.Run(() => _EncryptStep(block).AfterEncryptBlock);
+        }
+
+        var encryptedData = await Task.WhenAll(encryptedDataTasks);
+        return encryptedData.SelectMany(x => x).ToArray();
+    }
+
+    private byte[] _NonParallelDecrypt(byte[] data)
+    {
+        List<byte[]> decryptedData = [];
+        var blockSizeBytes = SymmetricalAlgorithm.BlockSizeBytes;
+
+        var prevDecryptedBlock = InitializationVector!;
+        var prevGamma = InitializationVector!;
+        var prevEncryptedBlock = encryptMode is EncryptMode.Pcbc ? new byte[8] : InitializationVector!;
+        for (var offset = 0; offset < data.Length; offset += blockSizeBytes)
+        {
+            var endBlock = offset + blockSizeBytes;
+            var block = data[offset..endBlock];
+
+            var decryptedBlocks = _DecryptStep(block, prevDecryptedBlock, prevGamma, prevEncryptedBlock);
+
+            prevDecryptedBlock = decryptedBlocks.DecryptedBlock;
+            prevEncryptedBlock = block;
+            prevGamma = decryptedBlocks.Gamma;
+
+            decryptedData.Add(decryptedBlocks.DecryptedBlock);
+        }
+
+        var decryptedDataArray = decryptedData.SelectMany(x => x).ToArray();
+        return _RemovePadding(decryptedDataArray);
+    }
+
+    private async Task<byte[]> _ParallelDecrypt(byte[] data)
+    {
+        var blockSizeBytes = SymmetricalAlgorithm.BlockSizeBytes;
+        var countBlocks = data.Length / blockSizeBytes;
+        var decryptedDataTasks = new Task<byte[]>[countBlocks];
+
+        var prevEncryptedBlock = InitializationVector!;
+        for (var i = 0; i < countBlocks; ++i)
+        {
+            var offset = i * blockSizeBytes;
+            var endBlock = offset + blockSizeBytes;
+            var block = data[offset..endBlock];
+
+            var prevEncryptedBlockCopy = prevEncryptedBlock;
+            prevEncryptedBlock = block;
+
+            decryptedDataTasks[i] = Task.Run(() => _DecryptStep(block, prevEncryptedBlockCopy).DecryptedBlock);
+        }
+
+        var decryptedData = await Task.WhenAll(decryptedDataTasks);
+        var decryptedDataArray = decryptedData.SelectMany(x => x).ToArray();
+        return _RemovePadding(decryptedDataArray);
+    }
+
+    private EncryptBlocks _EncryptStep(byte[] block, byte[]? prevEncryptedBlock = null, byte[]? prevBlock = null)
+    {
+        var gamma = _BeforeEncrypt(block, prevEncryptedBlock, prevBlock);
+        var encryptedBlock = SymmetricalAlgorithm.Encrypt(gamma);
+
+        var afterEncrypt = _AfterEncrypt(encryptedBlock, block);
+
+        return new EncryptBlocks(encryptedBlock: encryptedBlock, afterEncryptBlock: afterEncrypt);
+    }
+
+    private DecryptBlocks _DecryptStep(
+        byte[] block, byte[] prevEncryptedBlock, byte[]? prevDecryptedBlock = null, byte[]? prevGamma = null
+    )
+    {
+        var gamma = _BeforeDecrypt(block, prevDecryptedBlock, prevGamma);
+        var decryptedBlock = _DoDecrypt(block, gamma, prevEncryptedBlock, prevDecryptedBlock);
+
+        return new DecryptBlocks(gamma: gamma, decryptedBlock: decryptedBlock);
+    }
+
+    private bool _isParallelEncrypt() =>
+        EncryptMode is EncryptMode.Ecb or EncryptMode.Ctr or EncryptMode.RandomDelta;
+
+    private bool _isParallelDecrypt() =>
+        EncryptMode is EncryptMode.Ecb or EncryptMode.Cbc or EncryptMode.Ctr or EncryptMode.RandomDelta;
 }
