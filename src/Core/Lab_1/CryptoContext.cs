@@ -360,7 +360,7 @@ public class CryptoContext<T>(
 
         var prevDecryptedBlock = InitializationVector!;
         var prevGamma = InitializationVector!;
-        var prevEncryptedBlock = encryptMode is EncryptMode.Pcbc ? new byte[8] : InitializationVector!;
+        var prevEncryptedBlock = encryptMode is EncryptMode.Pcbc ? new byte[blockSizeBytes] : InitializationVector!;
         for (var i = 0; i < countBlocks; ++i)
         {
             var block = _GetBlock(data, i);
