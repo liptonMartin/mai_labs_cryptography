@@ -364,7 +364,7 @@ public class CryptoContext<T>(
         for (var i = 0; i < countBlocks; ++i)
         {
             var block = _GetBlock(data, i);
-            var decryptedBlocks = _DecryptStep(block, prevDecryptedBlock, (uint)i, prevGamma, prevEncryptedBlock);
+            var decryptedBlocks = _DecryptStep(block, prevEncryptedBlock, (uint)i, prevDecryptedBlock, prevGamma);
 
             prevDecryptedBlock = decryptedBlocks.DecryptedBlock;
             prevEncryptedBlock = block;
