@@ -24,7 +24,7 @@ public static class Console
             ),
             ["4"] = new LabAction(
                 "DEAL_128 Encrypt/Decrypt file",
-                () => DealExamples.DealMessage()
+                () => DealExamples.DealFiles()
             )
         }),
     };
