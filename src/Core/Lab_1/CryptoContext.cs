@@ -72,13 +72,14 @@ public class CryptoContext<T>(
             inputFilePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 4096, useAsync: true
         );
         await using var outputFile = new FileStream(
-            outputFilePath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read, bufferSize: 4096, useAsync: true
+            outputFilePath, FileMode.Create, FileAccess.Write, FileShare.Read, bufferSize: 4096, useAsync: true
         );
 
-        var buffer = new byte[SymmetricalAlgorithm.BlockSizeBytes];
+        var blockSizeBytes = SymmetricalAlgorithm.BlockSizeBytes;
+        var buffer = new byte[blockSizeBytes];
         while (true)
         {
-            var read = await inputFile.ReadAsync(buffer);
+            var read = await inputFile.ReadAtLeastAsync(buffer, blockSizeBytes, throwOnEndOfStream: false);
             if (read == 0)
                 break;
 
@@ -102,12 +103,9 @@ public class CryptoContext<T>(
     {
         _ValidateInputParameters();
         if (_isParallelDecrypt())
-        {
-            var result = await _ParallelDecrypt(data);
-            return _RemovePadding(result);
-        }
+            return await _ParallelDecrypt(data);
 
-        return _RemovePadding(_NonParallelDecrypt(data));
+        return _NonParallelDecrypt(data);
     }
 
     private byte[] _DoDecrypt(
