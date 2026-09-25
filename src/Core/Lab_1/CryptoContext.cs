@@ -1,4 +1,6 @@
-﻿namespace Core.Lab_1;
+﻿using System.Numerics;
+
+namespace Core.Lab_1;
 
 public enum EncryptMode
 {
@@ -49,8 +51,8 @@ public class CryptoContext<T>(
     private byte[]? InitializationVector => initializationVector;
     private int[] Parameters => parameters;
 
-    private ulong? _counter;
-    private uint? _delta;
+    private BigInteger? _counter;
+    private BigInteger? _delta;
 
     public async Task<byte[]> EncryptAsync(byte[] data) => await _Encrypt(data);
 
@@ -271,23 +273,27 @@ public class CryptoContext<T>(
 
     private void _ValidateInputParameters()
     {
-        if (
-            InitializationVector is null &&
-            EncryptMode is EncryptMode.Cbc or EncryptMode.Pcbc or EncryptMode.Cfb or EncryptMode.Ofb or EncryptMode.Ctr
-                or EncryptMode.RandomDelta
-        )
+        if (InitializationVector is null && EncryptMode is not EncryptMode.Ecb)
             throw new InvalidOperationException("Initializer vector is null");
+
+        var blockSizeBytes = SymmetricalAlgorithm.BlockSizeBytes;
+        if (EncryptMode is not EncryptMode.Ecb && initializationVector!.Length != blockSizeBytes)
+            throw new InvalidOperationException(
+                $"Length initialization vector should be equal length block {blockSizeBytes}"
+            );
 
         if (EncryptMode == EncryptMode.Ctr)
         {
-            _counter = Helper.TransformArrayBytesBigEndianToUlong(InitializationVector!);
-            _delta = 1;
+            _counter = new BigInteger(InitializationVector!, isUnsigned: true, isBigEndian: true);
+            _delta = new BigInteger([1], isUnsigned: true, isBigEndian: true);
         }
 
         if (EncryptMode == EncryptMode.RandomDelta)
         {
-            _counter = Helper.TransformArrayBytesBigEndianToUlong(InitializationVector!);
-            _delta = (uint)(_counter >> (sizeof(byte) * 4));
+            var halfBlockSizeBytes = blockSizeBytes / 2;
+            var mask = (new BigInteger([1]) << (halfBlockSizeBytes + 1)) - 1; // last halfBlockSizeBytes 1
+            _counter = new BigInteger(InitializationVector!, isUnsigned: true, isBigEndian: true);
+            _delta = _counter & mask;
 
             if (_delta % 2 == 0)
                 ++_delta;
@@ -433,8 +439,8 @@ public class CryptoContext<T>(
     {
         _ValidateEncryptDecryptCtrAndRandomDelta();
 
-        var currentCounter = _counter!.Value + blockNumber * _delta!.Value;
-        var counterBytes = BitConverter.GetBytes(currentCounter);
+        var currentCounter = _counter! + blockNumber * _delta!;
+        var counterBytes = currentCounter.Value.ToByteArray(isUnsigned: true, isBigEndian: true);
         var blockSizeBytes = SymmetricalAlgorithm.BlockSizeBytes;
         Array.Resize(ref counterBytes, blockSizeBytes);
 

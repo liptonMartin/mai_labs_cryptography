@@ -46,17 +46,6 @@ public static class Helper
         return block;
     }
 
-    public static uint TransformArrayBytesBigEndianToUint(byte[] array)
-    {
-        if (array.Length > 4)
-            throw new InvalidOperationException("array have more bytes than uint");
-
-        uint block = 0;
-        foreach (var b in array)
-            block = (block << 8) | b;
-        return block;
-    }
-
     public static byte GetFirstKBits(ulong number, int k)
     {
         return (byte)(number >> (sizeof(ulong) * 8 - k));
