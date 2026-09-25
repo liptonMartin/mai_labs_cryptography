@@ -39,7 +39,7 @@ public class CryptoContext<T>(
     params int[] parameters
 ) where T : ISymmetricalEncryptDecrypt
 {
-    private byte[] _key = key;
+    private readonly byte[] _key = key;
     private EncryptMode EncryptMode => encryptMode;
     private PaddingMode PaddingMode => paddingMode;
 
@@ -120,9 +120,9 @@ public class CryptoContext<T>(
             case EncryptMode.Ecb:
                 return gamma;
             case EncryptMode.Cbc:
-                return Helper.XorArrayOfBytes(gamma, prevEncryptedBlock!);
+                return Helper.XorArrayOfBytes(gamma, prevEncryptedBlock);
             case EncryptMode.Pcbc:
-                return Helper.XorArrayOfBytes(gamma, prevEncryptedBlock!, prevDecryptedBlock!);
+                return Helper.XorArrayOfBytes(gamma, prevEncryptedBlock, prevDecryptedBlock!);
             case EncryptMode.Cfb or EncryptMode.Ofb or EncryptMode.Ctr or EncryptMode.RandomDelta:
                 return Helper.XorArrayOfBytes(gamma, block);
             default:
@@ -189,14 +189,15 @@ public class CryptoContext<T>(
         }
     }
 
-    private byte[] _BeforeEncrypt(byte[] block, byte[]? prevEncryptedBlock = null, byte[]? prevBlock = null)
+    private byte[] _BeforeEncrypt(byte[] block, uint blockNumber, byte[]? prevEncryptedBlock = null,
+        byte[]? prevBlock = null)
     {
         if (!_isParallelEncrypt() && (prevEncryptedBlock is null || prevBlock is null))
             throw new InvalidOperationException(
                 "prevEncryptedBlock and prevBlock are required for non parallel operations"
             );
 
-        if (EncryptMode != EncryptMode.Ecb && block.Length != prevEncryptedBlock?.Length)
+        if (!_isParallelEncrypt() && block.Length != prevEncryptedBlock?.Length)
             throw new InvalidOperationException("block and prevEncryptedBlock have different length");
 
         var result = new byte[block.Length];
@@ -218,7 +219,7 @@ public class CryptoContext<T>(
                 return prevEncryptedBlock!;
 
             case EncryptMode.Ctr or EncryptMode.RandomDelta:
-                return _BeforeEncryptCtrAndRandomDelta();
+                return _BeforeEncryptCtrAndRandomDelta(blockNumber);
         }
 
         return result;
@@ -242,7 +243,11 @@ public class CryptoContext<T>(
         }
     }
 
-    private byte[] _BeforeDecrypt(byte[] block, byte[]? prevDecryptedBlock = null, byte[]? prevGamma = null)
+    private byte[] _BeforeDecrypt(
+        byte[] block,
+        uint blockNumber,
+        byte[]? prevDecryptedBlock = null,
+        byte[]? prevGamma = null)
     {
         if (!_isParallelDecrypt() && (prevDecryptedBlock is null || prevGamma is null))
             throw new InvalidOperationException(
@@ -258,7 +263,7 @@ public class CryptoContext<T>(
             case EncryptMode.Ofb:
                 return SymmetricalAlgorithm.Encrypt(prevGamma!);
             case EncryptMode.Ctr or EncryptMode.RandomDelta:
-                return _BeforeDecryptCtrAndRandomDelta();
+                return _BeforeDecryptCtrAndRandomDelta(blockNumber);
             default:
                 throw new NotImplementedException();
         }
@@ -274,7 +279,10 @@ public class CryptoContext<T>(
             throw new InvalidOperationException("Initializer vector is null");
 
         if (EncryptMode == EncryptMode.Ctr)
+        {
             _counter = Helper.TransformArrayBytesBigEndianToUlong(InitializationVector!);
+            _delta = 1;
+        }
 
         if (EncryptMode == EncryptMode.RandomDelta)
         {
@@ -286,31 +294,11 @@ public class CryptoContext<T>(
         }
     }
 
-    private byte[] _BeforeEncryptCtrAndRandomDelta()
+    private byte[] _BeforeEncryptCtrAndRandomDelta(uint blockNumber) => _GetCurrentCounter(blockNumber);
+
+    private byte[] _BeforeDecryptCtrAndRandomDelta(uint blockNumber)
     {
-        _ValidateEncryptDecryptCtrAndRandomDelta();
-
-        var counterBytes = BitConverter.GetBytes(_counter!.Value);
-        var blockSizeBytes = SymmetricalAlgorithm.BlockSizeBytes;
-        Array.Resize(ref counterBytes, blockSizeBytes);
-        if (EncryptMode == EncryptMode.Ctr)
-            ++_counter;
-        else
-            _counter += _delta;
-        return counterBytes;
-    }
-
-    private byte[] _BeforeDecryptCtrAndRandomDelta()
-    {
-        _ValidateEncryptDecryptCtrAndRandomDelta();
-
-        var counterBytes = BitConverter.GetBytes(_counter!.Value);
-        var blockSizeBytes = SymmetricalAlgorithm.BlockSizeBytes;
-        Array.Resize(ref counterBytes, blockSizeBytes);
-        if (EncryptMode == EncryptMode.Ctr)
-            ++_counter;
-        else
-            _counter += _delta;
+        var counterBytes = _GetCurrentCounter(blockNumber);
         return SymmetricalAlgorithm.Encrypt(counterBytes);
     }
 
@@ -321,27 +309,23 @@ public class CryptoContext<T>(
                 $"Invalid use of method {nameof(_ValidateEncryptDecryptCtrAndRandomDelta)}"
             );
 
-        if (encryptMode is EncryptMode.Ctr && _counter is null)
-            throw new InvalidOperationException("The counter is null for CTR encryption mode");
-
-        if (EncryptMode is EncryptMode.RandomDelta && (_counter is null || _delta is null))
-            throw new InvalidOperationException("The counter or delta is null for Random delta encryption mode");
+        if (_counter is null || _delta is null)
+            throw new InvalidOperationException("The counter or delta is null for CTR/Random delta encryption mode");
     }
 
     private byte[] _NonParallelEncrypt(byte[] data)
     {
         var blockSizeBytes = SymmetricalAlgorithm.BlockSizeBytes;
+        var countBlocks = data.Length / blockSizeBytes;
         List<byte[]> encryptedData = [];
 
         var prevEncryptedBlock = InitializationVector!;
         var prevBlock = new byte[8];
 
-        for (var offset = 0; offset < data.Length; offset += blockSizeBytes)
+        for (var i = 0; i < countBlocks; ++i)
         {
-            var endBlock = offset + blockSizeBytes;
-            var block = data[offset..endBlock];
-
-            var encryptedBlocks = _EncryptStep(block, prevEncryptedBlock, prevBlock);
+            var block = _GetBlock(data, i);
+            var encryptedBlocks = _EncryptStep(block, (uint)i, prevEncryptedBlock, prevBlock);
             encryptedData.Add(encryptedBlocks.AfterEncryptBlock);
 
             prevEncryptedBlock = encryptedBlocks.EncryptedBlock;
@@ -359,11 +343,9 @@ public class CryptoContext<T>(
 
         for (var i = 0; i < countBlocks; ++i)
         {
-            var offset = i * blockSizeBytes;
-            var endBlock = offset + blockSizeBytes;
-            var block = data[offset..endBlock];
-
-            encryptedDataTasks[i] = Task.Run(() => _EncryptStep(block).AfterEncryptBlock);
+            var block = _GetBlock(data, i);
+            var index = (uint)i;
+            encryptedDataTasks[i] = Task.Run(() => _EncryptStep(block, index).AfterEncryptBlock);
         }
 
         var encryptedData = await Task.WhenAll(encryptedDataTasks);
@@ -374,16 +356,15 @@ public class CryptoContext<T>(
     {
         List<byte[]> decryptedData = [];
         var blockSizeBytes = SymmetricalAlgorithm.BlockSizeBytes;
+        var countBlocks = data.Length / blockSizeBytes;
 
         var prevDecryptedBlock = InitializationVector!;
         var prevGamma = InitializationVector!;
         var prevEncryptedBlock = encryptMode is EncryptMode.Pcbc ? new byte[8] : InitializationVector!;
-        for (var offset = 0; offset < data.Length; offset += blockSizeBytes)
+        for (var i = 0; i < countBlocks; ++i)
         {
-            var endBlock = offset + blockSizeBytes;
-            var block = data[offset..endBlock];
-
-            var decryptedBlocks = _DecryptStep(block, prevDecryptedBlock, prevGamma, prevEncryptedBlock);
+            var block = _GetBlock(data, i);
+            var decryptedBlocks = _DecryptStep(block, prevDecryptedBlock, (uint)i, prevGamma, prevEncryptedBlock);
 
             prevDecryptedBlock = decryptedBlocks.DecryptedBlock;
             prevEncryptedBlock = block;
@@ -405,14 +386,11 @@ public class CryptoContext<T>(
         var prevEncryptedBlock = InitializationVector!;
         for (var i = 0; i < countBlocks; ++i)
         {
-            var offset = i * blockSizeBytes;
-            var endBlock = offset + blockSizeBytes;
-            var block = data[offset..endBlock];
-
+            var block = _GetBlock(data, i);
             var prevEncryptedBlockCopy = prevEncryptedBlock;
             prevEncryptedBlock = block;
-
-            decryptedDataTasks[i] = Task.Run(() => _DecryptStep(block, prevEncryptedBlockCopy).DecryptedBlock);
+            var index = (uint)i;
+            decryptedDataTasks[i] = Task.Run(() => _DecryptStep(block, prevEncryptedBlockCopy, index).DecryptedBlock);
         }
 
         var decryptedData = await Task.WhenAll(decryptedDataTasks);
@@ -420,9 +398,10 @@ public class CryptoContext<T>(
         return _RemovePadding(decryptedDataArray);
     }
 
-    private EncryptBlocks _EncryptStep(byte[] block, byte[]? prevEncryptedBlock = null, byte[]? prevBlock = null)
+    private EncryptBlocks _EncryptStep(byte[] block, uint blockNumber, byte[]? prevEncryptedBlock = null,
+        byte[]? prevBlock = null)
     {
-        var gamma = _BeforeEncrypt(block, prevEncryptedBlock, prevBlock);
+        var gamma = _BeforeEncrypt(block, blockNumber, prevEncryptedBlock, prevBlock);
         var encryptedBlock = SymmetricalAlgorithm.Encrypt(gamma);
 
         var afterEncrypt = _AfterEncrypt(encryptedBlock, block);
@@ -431,10 +410,14 @@ public class CryptoContext<T>(
     }
 
     private DecryptBlocks _DecryptStep(
-        byte[] block, byte[] prevEncryptedBlock, byte[]? prevDecryptedBlock = null, byte[]? prevGamma = null
+        byte[] block,
+        byte[] prevEncryptedBlock,
+        uint blockNumber,
+        byte[]? prevDecryptedBlock = null,
+        byte[]? prevGamma = null
     )
     {
-        var gamma = _BeforeDecrypt(block, prevDecryptedBlock, prevGamma);
+        var gamma = _BeforeDecrypt(block, blockNumber, prevDecryptedBlock, prevGamma);
         var decryptedBlock = _DoDecrypt(block, gamma, prevEncryptedBlock, prevDecryptedBlock);
 
         return new DecryptBlocks(gamma: gamma, decryptedBlock: decryptedBlock);
@@ -445,4 +428,24 @@ public class CryptoContext<T>(
 
     private bool _isParallelDecrypt() =>
         EncryptMode is EncryptMode.Ecb or EncryptMode.Cbc or EncryptMode.Ctr or EncryptMode.RandomDelta;
+
+    private byte[] _GetCurrentCounter(uint blockNumber)
+    {
+        _ValidateEncryptDecryptCtrAndRandomDelta();
+
+        var currentCounter = _counter!.Value + blockNumber * _delta!.Value;
+        var counterBytes = BitConverter.GetBytes(currentCounter);
+        var blockSizeBytes = SymmetricalAlgorithm.BlockSizeBytes;
+        Array.Resize(ref counterBytes, blockSizeBytes);
+
+        return counterBytes;
+    }
+
+    private byte[] _GetBlock(byte[] data, int blockNumber)
+    {
+        var blockSizeBytes = SymmetricalAlgorithm.BlockSizeBytes;
+        var offset = blockNumber * blockSizeBytes;
+        var endBlock = offset + blockSizeBytes;
+        return data[offset..endBlock];
+    }
 }
