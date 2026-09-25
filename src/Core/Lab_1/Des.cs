@@ -5,7 +5,7 @@ public class DesRoundKeysGenerator : IRoundKeysGenerator
     public List<byte[]> GenerateRoundKeys(byte[] key)
     {
         var cdBlockBytes = _PermutateByPc_1(key);
-        ulong cdBlock = Helper.TransformArrayBytesBigEndianToUlong(cdBlockBytes);
+        var cdBlock = Helper.TransformArrayBytesBigEndianToUlong(cdBlockBytes);
         var cBlock = (uint)((cdBlock >> 28) & 0x0FFF_FFFF);
         var dBlock = (uint)(cdBlock & 0x0FFF_FFFF);
 

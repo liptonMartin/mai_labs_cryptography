@@ -7,7 +7,7 @@ public interface IRoundKeysGenerator
 
 public interface IEncryptionRound
 {
-    public byte[] DoEncrypt(byte[] block, byte[] roundKey);
+    public byte[] DoEncrypt(byte[] halfBlock, byte[] roundKey);
 }
 
 public interface ISymmetricalEncryptDecrypt
