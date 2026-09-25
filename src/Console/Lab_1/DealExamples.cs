@@ -4,31 +4,31 @@ using Core.Lab_1;
 
 namespace Console.Lab_1;
 
-public static class DesExamples
+public static class DealExamples
 {
-    private const int BlockSize = 8;
+    private const int BlockSize = 16;
 
     private static readonly byte[] DefaultKey =
     [
-        1, 35, 69, 103, 137, 171, 205, 239
+        1, 35, 69, 103, 137, 171, 205, 239, 1, 35, 69, 103, 137, 171, 205, 239
     ];
 
     private static readonly byte[] DefaultInitializationVector =
     [
-        0, 0, 0, 0, 0, 0, 0, 0
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
     ];
 
-    private const string DefaultMessage = "Hello, DES!";
+    private const string DefaultMessage = "Hello, DEAL 128!";
 
     private const EncryptMode DefaultEncryptMode = EncryptMode.Ecb;
     private const PaddingMode DefaultPaddingMode = PaddingMode.Zeros;
 
-    public static async Task DesMessage()
+    public static async Task DealMessage()
     {
         var key = OutputHelper.ReadBytes(
             BlockSize,
             DefaultKey,
-            "Input DES key");
+            "Input DEAL key");
 
         var message = OutputHelper.ReadString(
             "Input message",
@@ -52,7 +52,7 @@ public static class DesExamples
                 "Input initialization vector");
         }
 
-        var context = new CryptoContext<Des>(
+        var context = new CryptoContext<Deal128>(
             key,
             encryptMode,
             paddingMode,
@@ -83,7 +83,7 @@ public static class DesExamples
             $"{Encoding.UTF8.GetString(decryptedMessage)}");
     }
 
-    public static async Task DesFiles()
+    public static async Task DealFiles()
     {
         var key = OutputHelper.ReadBytes(
             BlockSize,
@@ -108,7 +108,7 @@ public static class DesExamples
                 "Input initialization vector");
         }
 
-        var context = new CryptoContext<Des>(
+        var context = new CryptoContext<Deal128>(
             key,
             encryptMode,
             paddingMode,

@@ -320,7 +320,7 @@ public class CryptoContext<T>(
         List<byte[]> encryptedData = [];
 
         var prevEncryptedBlock = InitializationVector!;
-        var prevBlock = new byte[8];
+        var prevBlock = new byte[blockSizeBytes];
 
         for (var i = 0; i < countBlocks; ++i)
         {

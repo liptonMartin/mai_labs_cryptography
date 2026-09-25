@@ -8,20 +8,24 @@ public static class Console
 
     private static readonly Dictionary<string, (string Title, Dictionary<string, LabAction> Actions)> Labs = new()
     {
-        ["1"] = ("Lab 1. DES", new()
+        ["1"] = ("Lab 1. DES/DEAL_128", new()
         {
             ["1"] = new LabAction(
-                "Шифрование/расшифровка примера",
-                () => DesExamples.DesEcbZeros()
+                "DES Encrypt/Decrypt",
+                () => DesExamples.DesMessage()
             ),
             ["2"] = new LabAction(
-                "Шифрование/расшифровка примера из файла",
-                () => DesExamples.DesEcbZerosFromFile()
+                "DES Encrypt/Decrypt file",
+                () => DesExamples.DesFiles()
             ),
             ["3"] = new LabAction(
-                "Шифрование/расшифровка с выбором режимов шифрования и padding",
-                () => DesExamples.DesChooseModes()
+                "DEAL_128 Encrypt/Decrypt",
+                () => DealExamples.DealMessage()
             ),
+            ["4"] = new LabAction(
+                "DEAL_128 Encrypt/Decrypt file",
+                () => DealExamples.DealMessage()
+            )
         }),
     };
 
@@ -53,14 +57,14 @@ public static class Console
                 catch (Exception ex)
                 {
                     System.Console.ForegroundColor = ConsoleColor.Red;
-                    System.Console.WriteLine($"Ошибка: {ex.Message}");
+                    System.Console.WriteLine($"Error: {ex.Message}");
                     System.Console.ResetColor();
                 }
 
                 System.Console.WriteLine();
                 System.Console.WriteLine(new string('─', 60));
                 System.Console.WriteLine();
-                System.Console.WriteLine("Нажмите Enter, чтобы продолжить...");
+                System.Console.WriteLine("Press Enter to continue...");
                 System.Console.ReadLine();
             }
         }
@@ -69,21 +73,21 @@ public static class Console
     private static void PrintLabsMenu()
     {
         System.Console.Clear();
-        System.Console.WriteLine("Выберите номер лабы:");
+        System.Console.WriteLine("Choose lab number:");
         foreach (var (key, value) in Labs)
             System.Console.WriteLine($"  {key}. {value.Title}");
-        System.Console.WriteLine("  0. Выход");
+        System.Console.WriteLine("  0. Exit");
         System.Console.Write("> ");
     }
 
     private static void PrintActionsMenu(string labTitle, Dictionary<string, LabAction> actions)
     {
         System.Console.Clear();
-        System.Console.WriteLine($"Лаба: {labTitle}");
-        System.Console.WriteLine("Что вывести:");
+        System.Console.WriteLine($"Lab: {labTitle}");
+        System.Console.WriteLine("Choose action:");
         foreach (var (key, value) in actions)
             System.Console.WriteLine($"  {key}. {value.Description}");
-        System.Console.WriteLine("  0. Назад");
+        System.Console.WriteLine("  0. Back");
         System.Console.Write("> ");
     }
 
@@ -99,7 +103,7 @@ public static class Console
             if (input is not null && valid.Contains(input)) return input;
 
             System.Console.ForegroundColor = ConsoleColor.Yellow;
-            System.Console.Write("Некорректный ввод, попробуйте ещё раз: ");
+            System.Console.Write("Invalid input, please try again: ");
             System.Console.ResetColor();
         }
     }
