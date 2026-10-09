@@ -2,6 +2,15 @@
 
 public static class Math
 {
+    public static uint EuclidAlgorithm(uint a, uint b)
+    {
+        if (b > a)
+            (a, b) = (b, a);
+        while (a != 0 && b != 0)
+            (a, b) = (b, a % b);
+        return a + b;
+    }
+    
     public static int CalcJacobiSymbol(uint a, uint n)
     {
         var result = 1;
