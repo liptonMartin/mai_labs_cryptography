@@ -2,6 +2,24 @@
 
 public static class Math
 {
+    public struct BezoutEquationCoefficients(long x, long y, uint gcd)
+    {
+        public readonly long X = x;
+        public readonly long Y = y;
+        public readonly uint Gcd = gcd;
+    }
+
+    public static BezoutEquationCoefficients ExtendedEuclidAlgorithm(uint a, uint b)
+    {
+        if (b == 0)
+            return new BezoutEquationCoefficients(1, 0, a);
+
+        var coefficients = ExtendedEuclidAlgorithm(b, a % b);
+        var x1 = coefficients.Y;
+        var y1 = coefficients.X - (a / b) * coefficients.Y;
+        return new BezoutEquationCoefficients(x1, y1, coefficients.Gcd);
+    }
+
     public static uint EuclidAlgorithm(uint a, uint b)
     {
         if (b > a)
@@ -10,7 +28,7 @@ public static class Math
             (a, b) = (b, a % b);
         return a + b;
     }
-    
+
     public static int CalcJacobiSymbol(uint a, uint n)
     {
         var result = 1;
@@ -32,13 +50,13 @@ public static class Math
 
         return n == 1 ? result : 0;
     }
-    
+
     public static int CalcLegendreSymbol(uint a, uint p)
     {
         var result = FastBinaryPowModule(a, (p - 1) / 2, p);
         return result == p - 1 ? -1 : (int)result;
     }
-    
+
     public static uint FastBinaryPowModule(uint a, uint b, uint mod)
     {
         ulong accumulator = a;

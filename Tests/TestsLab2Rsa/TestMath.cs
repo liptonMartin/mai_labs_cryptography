@@ -717,5 +717,202 @@ namespace Tests.TestsLab2Rsa
 
             Assert.That(RsaMath.EuclidAlgorithm(a, a), Is.EqualTo(a));
         }
+
+        private static void AssertBezout(uint a, uint b, RsaMath.BezoutEquationCoefficients coeffs)
+        {
+            uint expectedGcd = (uint)BigInteger.GreatestCommonDivisor(a, b);
+            Assert.That(
+                coeffs.Gcd,
+                Is.EqualTo(expectedGcd),
+                $"Gcd для a={a}, b={b}"
+            );
+
+            BigInteger left = (BigInteger)a * coeffs.X + (BigInteger)b * coeffs.Y;
+            Assert.That(
+                left,
+                Is.EqualTo((BigInteger)coeffs.Gcd),
+                $"Тождество Безу для a={a}, b={b}: " +
+                $"{a}*{coeffs.X} + {b}*{coeffs.Y} != {coeffs.Gcd}"
+            );
+        }
+
+        [Test]
+        public void ExtendedEuclid_BothZero_ReturnsGcdZero()
+        {
+            var c = RsaMath.ExtendedEuclidAlgorithm(0, 0);
+
+            Assert.That(c.Gcd, Is.EqualTo(0));
+            Assert.That(c.X, Is.EqualTo(1));
+            Assert.That(c.Y, Is.EqualTo(0));
+            AssertBezout(0, 0, c);
+        }
+
+        [Test]
+        public void ExtendedEuclid_FirstZero_ReturnsSecondAsGcd()
+        {
+            var c = RsaMath.ExtendedEuclidAlgorithm(0, 5);
+
+            Assert.That(c.Gcd, Is.EqualTo(5));
+            Assert.That(c.X, Is.EqualTo(0));
+            Assert.That(c.Y, Is.EqualTo(1));
+            AssertBezout(0, 5, c);
+        }
+
+        [Test]
+        public void ExtendedEuclid_SecondZero_ReturnsFirstAsGcd()
+        {
+            var c = RsaMath.ExtendedEuclidAlgorithm(5, 0);
+
+            Assert.That(c.Gcd, Is.EqualTo(5));
+            Assert.That(c.X, Is.EqualTo(1));
+            Assert.That(c.Y, Is.EqualTo(0));
+            AssertBezout(5, 0, c);
+        }
+
+        [Test]
+        public void ExtendedEuclid_EqualValues_ReturnsSameValue()
+        {
+            var c = RsaMath.ExtendedEuclidAlgorithm(7, 7);
+
+            Assert.That(c.Gcd, Is.EqualTo(7));
+            Assert.That(c.X, Is.EqualTo(0));
+            Assert.That(c.Y, Is.EqualTo(1));
+            AssertBezout(7, 7, c);
+        }
+
+        [Test]
+        public void ExtendedEuclid_SimpleCases_ExactCoefficients()
+        {
+            var cases = new (uint a, uint b, uint gcd, long x, long y)[]
+            {
+                (48, 18, 6, -1, 3),
+                (18, 48, 6, 3, -1),
+                (30, 21, 3, -2, 3),
+                (17, 5, 1, -2, 7),
+                (100, 75, 25, 1, -1),
+            };
+
+            foreach (var (a, b, gcd, x, y) in cases)
+            {
+                var c = RsaMath.ExtendedEuclidAlgorithm(a, b);
+
+                Assert.That(c.Gcd, Is.EqualTo(gcd), $"Gcd для {a}, {b}");
+                Assert.That(c.X, Is.EqualTo(x), $"X для {a}, {b}");
+                Assert.That(c.Y, Is.EqualTo(y), $"Y для {a}, {b}");
+                AssertBezout(a, b, c);
+            }
+        }
+
+        [Test]
+        public void ExtendedEuclid_ArgumentOrder_GcdSame_IdentityHolds()
+        {
+            var c1 = RsaMath.ExtendedEuclidAlgorithm(48, 18);
+            var c2 = RsaMath.ExtendedEuclidAlgorithm(18, 48);
+
+            Assert.That(c1.Gcd, Is.EqualTo(c2.Gcd));
+            AssertBezout(48, 18, c1);
+            AssertBezout(18, 48, c2);
+        }
+
+        [Test]
+        public void ExtendedEuclid_CompareWithBigIntegerGcd_AllSmallValues()
+        {
+            for (uint a = 0; a <= 30; a++)
+            {
+                for (uint b = 0; b <= 30; b++)
+                {
+                    var c = RsaMath.ExtendedEuclidAlgorithm(a, b);
+                    AssertBezout(a, b, c);
+                }
+            }
+        }
+
+        [Test]
+        public void ExtendedEuclid_CompareWithBigIntegerGcd_RandomValues()
+        {
+            for (int i = 0; i < 1000; i++)
+            {
+                uint a = (uint)_random.Next(0, int.MaxValue);
+                uint b = (uint)_random.Next(0, int.MaxValue);
+
+                var c = RsaMath.ExtendedEuclidAlgorithm(a, b);
+                AssertBezout(a, b, c);
+            }
+        }
+
+        [Test]
+        public void ExtendedEuclid_RandomValues_WithCommonFactor()
+        {
+            for (int i = 0; i < 1000; i++)
+            {
+                uint factor = (uint)_random.Next(1, 1000);
+                uint a = factor * (uint)_random.Next(1, 1000);
+                uint b = factor * (uint)_random.Next(1, 1000);
+
+                var c = RsaMath.ExtendedEuclidAlgorithm(a, b);
+
+                AssertBezout(a, b, c);
+                Assert.That(
+                    c.Gcd % factor,
+                    Is.EqualTo(0),
+                    $"Gcd должен делиться на общий множитель factor={factor}"
+                );
+            }
+        }
+
+        [Test]
+        public void ExtendedEuclid_MaxValues_CompareWithBigIntegerGcd()
+        {
+            uint a = uint.MaxValue;
+            uint b = uint.MaxValue - 1;
+
+            var c = RsaMath.ExtendedEuclidAlgorithm(a, b);
+            AssertBezout(a, b, c);
+        }
+
+        [Test]
+        public void ExtendedEuclid_MaxValueAndZero_ReturnsMaxValue()
+        {
+            uint a = uint.MaxValue;
+
+            var c1 = RsaMath.ExtendedEuclidAlgorithm(a, 0);
+            Assert.That(c1.Gcd, Is.EqualTo(a));
+            Assert.That(c1.X, Is.EqualTo(1));
+            Assert.That(c1.Y, Is.EqualTo(0));
+            AssertBezout(a, 0, c1);
+
+            var c2 = RsaMath.ExtendedEuclidAlgorithm(0, a);
+            Assert.That(c2.Gcd, Is.EqualTo(a));
+            Assert.That(c2.X, Is.EqualTo(0));
+            Assert.That(c2.Y, Is.EqualTo(1));
+            AssertBezout(0, a, c2);
+        }
+
+        [Test]
+        public void ExtendedEuclid_MaxValueAndOne_ReturnsOne()
+        {
+            uint a = uint.MaxValue;
+
+            var c1 = RsaMath.ExtendedEuclidAlgorithm(a, 1);
+            Assert.That(c1.Gcd, Is.EqualTo(1));
+            AssertBezout(a, 1, c1);
+
+            var c2 = RsaMath.ExtendedEuclidAlgorithm(1, a);
+            Assert.That(c2.Gcd, Is.EqualTo(1));
+            AssertBezout(1, a, c2);
+        }
+
+        [Test]
+        public void ExtendedEuclid_MaxValueWithItself_ReturnsMaxValue()
+        {
+            uint a = uint.MaxValue;
+
+            var c = RsaMath.ExtendedEuclidAlgorithm(a, a);
+
+            Assert.That(c.Gcd, Is.EqualTo(a));
+            Assert.That(c.X, Is.EqualTo(0));
+            Assert.That(c.Y, Is.EqualTo(1));
+            AssertBezout(a, a, c);
+        }
     }
 }
