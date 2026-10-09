@@ -2,6 +2,28 @@
 
 public static class Math
 {
+    public static int CalcJacobiSymbol(uint a, uint n)
+    {
+        var result = 1;
+        a %= n;
+        while (a != 0)
+        {
+            while (a % 2 == 0)
+            {
+                result *= n % 8 is 1 or 7 ? 1 : -1;
+                a /= 2;
+            }
+
+            if (a % 4 == 3 && n % 4 == 3)
+                result *= -1;
+
+            (a, n) = (n, a);
+            a %= n;
+        }
+
+        return n == 1 ? result : 0;
+    }
+    
     public static int CalcLegendreSymbol(uint a, uint p)
     {
         var result = FastBinaryPowModule(a, (p - 1) / 2, p);
