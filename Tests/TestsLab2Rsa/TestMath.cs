@@ -914,5 +914,203 @@ namespace Tests.TestsLab2Rsa
             Assert.That(c.Y, Is.EqualTo(1));
             AssertBezout(a, a, c);
         }
+
+        private static void AssertBinaryGcd(uint a, uint b, uint actualGcd)
+        {
+            uint expectedGcd = (uint)BigInteger.GreatestCommonDivisor(a, b);
+            Assert.That(
+                actualGcd,
+                Is.EqualTo(expectedGcd),
+                $"Gcd для a={a}, b={b}"
+            );
+        }
+
+        [Test]
+        public void BinaryEuclid_BothZero_ReturnsZero()
+        {
+            var gcd = RsaMath.BinaryEuclidAlgorithm(0, 0);
+
+            Assert.That(gcd, Is.EqualTo(0));
+            AssertBinaryGcd(0, 0, gcd);
+        }
+
+        [Test]
+        public void BinaryEuclid_FirstZero_ReturnsSecond()
+        {
+            var gcd = RsaMath.BinaryEuclidAlgorithm(0, 5);
+
+            Assert.That(gcd, Is.EqualTo(5));
+            AssertBinaryGcd(0, 5, gcd);
+        }
+
+        [Test]
+        public void BinaryEuclid_SecondZero_ReturnsFirst()
+        {
+            var gcd = RsaMath.BinaryEuclidAlgorithm(5, 0);
+
+            Assert.That(gcd, Is.EqualTo(5));
+            AssertBinaryGcd(5, 0, gcd);
+        }
+
+        [Test]
+        public void BinaryEuclid_EqualValues_ReturnsSameValue()
+        {
+            var gcd = RsaMath.BinaryEuclidAlgorithm(7, 7);
+
+            Assert.That(gcd, Is.EqualTo(7));
+            AssertBinaryGcd(7, 7, gcd);
+        }
+
+        [Test]
+        public void BinaryEuclid_SimpleCases_ExactGcd()
+        {
+            var cases = new (uint a, uint b, uint gcd)[]
+            {
+                (48, 18, 6),
+                (18, 48, 6),
+                (30, 21, 3),
+                (17, 5, 1),
+                (100, 75, 25),
+                (12, 8, 4),
+                (270, 192, 6),
+                (1071, 462, 21),
+            };
+
+            foreach (var (a, b, expectedGcd) in cases)
+            {
+                var gcd = RsaMath.BinaryEuclidAlgorithm(a, b);
+
+                Assert.That(gcd, Is.EqualTo(expectedGcd), $"Gcd для {a}, {b}");
+                AssertBinaryGcd(a, b, gcd);
+            }
+        }
+
+        [Test]
+        public void BinaryEuclid_ArgumentOrder_GcdSame()
+        {
+            var gcd1 = RsaMath.BinaryEuclidAlgorithm(48, 18);
+            var gcd2 = RsaMath.BinaryEuclidAlgorithm(18, 48);
+
+            Assert.That(gcd1, Is.EqualTo(gcd2));
+            AssertBinaryGcd(48, 18, gcd1);
+            AssertBinaryGcd(18, 48, gcd2);
+        }
+
+        [Test]
+        public void BinaryEuclid_CompareWithBigIntegerGcd_AllSmallValues()
+        {
+            for (uint a = 0; a <= 30; a++)
+            {
+                for (uint b = 0; b <= 30; b++)
+                {
+                    var gcd = RsaMath.BinaryEuclidAlgorithm(a, b);
+                    AssertBinaryGcd(a, b, gcd);
+                }
+            }
+        }
+
+        [Test]
+        public void BinaryEuclid_CompareWithBigIntegerGcd_RandomValues()
+        {
+            for (int i = 0; i < 1000; i++)
+            {
+                uint a = (uint)_random.Next(0, int.MaxValue);
+                uint b = (uint)_random.Next(0, int.MaxValue);
+
+                var gcd = RsaMath.BinaryEuclidAlgorithm(a, b);
+                AssertBinaryGcd(a, b, gcd);
+            }
+        }
+
+        [Test]
+        public void BinaryEuclid_RandomValues_WithCommonFactor()
+        {
+            for (int i = 0; i < 1000; i++)
+            {
+                uint factor = (uint)_random.Next(1, 1000);
+                uint a = factor * (uint)_random.Next(1, 1000);
+                uint b = factor * (uint)_random.Next(1, 1000);
+
+                var gcd = RsaMath.BinaryEuclidAlgorithm(a, b);
+
+                AssertBinaryGcd(a, b, gcd);
+                Assert.That(
+                    gcd % factor,
+                    Is.EqualTo(0),
+                    $"Gcd должен делиться на общий множитель factor={factor}"
+                );
+            }
+        }
+
+        [Test]
+        public void BinaryEuclid_MaxValues_CompareWithBigIntegerGcd()
+        {
+            uint a = uint.MaxValue;
+            uint b = uint.MaxValue - 1;
+
+            var gcd = RsaMath.BinaryEuclidAlgorithm(a, b);
+            AssertBinaryGcd(a, b, gcd);
+        }
+
+        [Test]
+        public void BinaryEuclid_MaxValueAndZero_ReturnsMaxValue()
+        {
+            uint a = uint.MaxValue;
+
+            var gcd1 = RsaMath.BinaryEuclidAlgorithm(a, 0);
+            Assert.That(gcd1, Is.EqualTo(a));
+            AssertBinaryGcd(a, 0, gcd1);
+
+            var gcd2 = RsaMath.BinaryEuclidAlgorithm(0, a);
+            Assert.That(gcd2, Is.EqualTo(a));
+            AssertBinaryGcd(0, a, gcd2);
+        }
+
+        [Test]
+        public void BinaryEuclid_MaxValueAndOne_ReturnsOne()
+        {
+            uint a = uint.MaxValue;
+
+            var gcd1 = RsaMath.BinaryEuclidAlgorithm(a, 1);
+            Assert.That(gcd1, Is.EqualTo(1));
+            AssertBinaryGcd(a, 1, gcd1);
+
+            var gcd2 = RsaMath.BinaryEuclidAlgorithm(1, a);
+            Assert.That(gcd2, Is.EqualTo(1));
+            AssertBinaryGcd(1, a, gcd2);
+        }
+
+        [Test]
+        public void BinaryEuclid_MaxValueWithItself_ReturnsMaxValue()
+        {
+            uint a = uint.MaxValue;
+
+            var gcd = RsaMath.BinaryEuclidAlgorithm(a, a);
+
+            Assert.That(gcd, Is.EqualTo(a));
+            AssertBinaryGcd(a, a, gcd);
+        }
+
+        [Test]
+        public void BinaryEuclid_PowersOfTwo_ReturnsSmallestPower()
+        {
+            // Классический кейс для бинарного алгоритма: общие множители 2
+            var cases = new (uint a, uint b, uint gcd)[]
+            {
+                (8, 4, 4),
+                (16, 24, 8),
+                (1024, 512, 512),
+                (2, 4, 2),
+                (1u << 31, 1u << 30, 1u << 30),
+            };
+
+            foreach (var (a, b, expectedGcd) in cases)
+            {
+                var gcd = RsaMath.BinaryEuclidAlgorithm(a, b);
+
+                Assert.That(gcd, Is.EqualTo(expectedGcd), $"Gcd для {a}, {b}");
+                AssertBinaryGcd(a, b, gcd);
+            }
+        }
     }
 }

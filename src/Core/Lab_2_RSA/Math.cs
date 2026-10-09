@@ -9,6 +9,38 @@ public static class Math
         public readonly uint Gcd = gcd;
     }
 
+    public static uint BinaryEuclidAlgorithm(uint a, uint b)
+    {
+        if (a == 0)
+            return b;
+        if (b == 0)
+            return a;
+
+        var count = 0;
+        while ((a & 1u) == 0 && (b & 1u) == 0)
+        {
+            ++count;
+            a >>= 1;
+            b >>= 1;
+        }
+
+        while ((a & 1u) == 0)
+            a >>= 1;
+
+        while (b != 0)
+        {
+            while ((b & 1u) == 0)
+                b >>= 1;
+
+            if (a > b)
+                (a, b) = (b, a);
+
+            b -= a;
+        }
+
+        return a << count;
+    }
+
     public static BezoutEquationCoefficients ExtendedEuclidAlgorithm(uint a, uint b)
     {
         if (b == 0)
