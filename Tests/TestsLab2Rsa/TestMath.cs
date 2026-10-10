@@ -1112,5 +1112,422 @@ namespace Tests.TestsLab2Rsa
                 AssertBinaryGcd(a, b, gcd);
             }
         }
+
+        [TestFixture]
+        public class EulerFunctionTests
+        {
+            private Random _random;
+
+            [SetUp]
+            public void SetUp()
+            {
+                _random = new Random(54321);
+            }
+
+            private static uint EulerPhiReference(uint n)
+            {
+                uint result = n;
+                uint m = n;
+
+                if (m % 2 == 0)
+                {
+                    while (m % 2 == 0) m /= 2;
+                    result -= result / 2;
+                }
+
+                for (uint p = 3; (ulong)p * p <= m; p += 2)
+                {
+                    if (m % p == 0)
+                    {
+                        while (m % p == 0) m /= p;
+                        result -= result / p;
+                    }
+                }
+
+                if (m > 1)
+                    result -= result / m;
+
+                return result;
+            }
+
+            private static bool IsPrime(uint n)
+            {
+                if (n < 2) return false;
+                if (n == 2) return true;
+                if (n % 2 == 0) return false;
+                for (uint d = 3; (ulong)d * d <= n; d += 2)
+                    if (n % d == 0)
+                        return false;
+                return true;
+            }
+
+            // =====================================================================
+            // CalcFunctionEulerByDpf
+            // =====================================================================
+
+            [Test]
+            public void Dpf_One_ReturnsOne()
+            {
+                Assert.That(
+                    RsaMath.CalcFunctionEulerByDpf(1),
+                    Is.EqualTo(1.0).Within(1e-9)
+                );
+            }
+
+            [Test]
+            public void Dpf_AllSmallValues_MatchReference()
+            {
+                for (uint n = 1; n <= 200; n++)
+                {
+                    double actual = RsaMath.CalcFunctionEulerByDpf(n);
+                    double expected = EulerPhiReference(n);
+
+                    Assert.That(actual, Is.EqualTo(expected).Within(1e-9), $"n={n}");
+                }
+            }
+
+            [Test]
+            public void Dpf_RandomValues_MatchReference()
+            {
+                for (int i = 0; i < 200; i++)
+                {
+                    uint n = (uint)_random.Next(1, 5000);
+                    double actual = RsaMath.CalcFunctionEulerByDpf(n);
+                    double expected = EulerPhiReference(n);
+
+                    Assert.That(actual, Is.EqualTo(expected).Within(1e-6), $"n={n}");
+                }
+            }
+
+            [Test]
+            public void Dpf_Primes_ReturnPminusOne()
+            {
+                uint[] primes = { 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 97, 101, 997 };
+                foreach (uint p in primes)
+                {
+                    double actual = RsaMath.CalcFunctionEulerByDpf(p);
+                    Assert.That(actual, Is.EqualTo((double)(p - 1)).Within(1e-9), $"p={p}");
+                }
+            }
+
+            [Test]
+            public void Dpf_PowersOfTwo_ReturnHalf()
+            {
+                for (int k = 1; k <= 15; k++)
+                {
+                    uint n = 1u << k;
+                    double actual = RsaMath.CalcFunctionEulerByDpf(n);
+                    Assert.That(actual, Is.EqualTo(n / 2.0).Within(1e-6), $"n={n}");
+                }
+            }
+
+            [Test]
+            public void Dpf_ResultIsIntegerWithinTolerance()
+            {
+                for (uint n = 1; n <= 100; n++)
+                {
+                    double actual = RsaMath.CalcFunctionEulerByDpf(n);
+                    double rounded = Math.Round(actual);
+                    Assert.That(actual, Is.EqualTo(rounded).Within(1e-6), $"n={n}");
+                }
+            }
+
+            // =====================================================================
+            // CalcFunctionEulerByFactorization
+            // =====================================================================
+
+            [Test]
+            public void FactorizationEuler_One_ReturnsOne()
+            {
+                Assert.That(
+                    RsaMath.CalcFunctionEulerByFactorization(1),
+                    Is.EqualTo(1)
+                );
+            }
+
+            [Test]
+            public void FactorizationEuler_AllSmallValues_MatchReference()
+            {
+                for (uint n = 1; n <= 1000; n++)
+                {
+                    uint actual = RsaMath.CalcFunctionEulerByFactorization(n);
+                    uint expected = EulerPhiReference(n);
+
+                    Assert.That(actual, Is.EqualTo(expected), $"n={n}");
+                }
+            }
+
+            [Test]
+            public void FactorizationEuler_RandomValues_MatchReference()
+            {
+                for (int i = 0; i < 2000; i++)
+                {
+                    uint n = (uint)_random.Next(1, 1_000_000);
+                    uint actual = RsaMath.CalcFunctionEulerByFactorization(n);
+                    uint expected = EulerPhiReference(n);
+
+                    Assert.That(actual, Is.EqualTo(expected), $"n={n}");
+                }
+            }
+
+            [Test]
+            public void FactorizationEuler_Primes_ReturnPminusOne()
+            {
+                uint[] primes = { 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 97, 101, 997, 7919 };
+                foreach (uint p in primes)
+                {
+                    uint actual = RsaMath.CalcFunctionEulerByFactorization(p);
+                    Assert.That(actual, Is.EqualTo(p - 1), $"p={p}");
+                }
+            }
+
+            [Test]
+            public void FactorizationEuler_KnownValues()
+            {
+                var cases = new (uint n, uint expected)[]
+                {
+                    (1, 1),
+                    (2, 1),
+                    (4, 2),
+                    (8, 4),
+                    (12, 4),
+                    (36, 12),
+                    (100, 40),
+                    (360, 96),
+                    (1000, 400),
+                    (65536, 32768),
+                };
+
+                foreach (var (n, expected) in cases)
+                {
+                    uint actual = RsaMath.CalcFunctionEulerByFactorization(n);
+                    Assert.That(actual, Is.EqualTo(expected), $"n={n}");
+                }
+            }
+
+            [Test]
+            public void FactorizationEuler_PowersOfPrime_UsePhiOfPowerFormula()
+            {
+                var cases = new (uint n, uint expected)[]
+                {
+                    (4, 2), (8, 4), (16, 8), (32, 16), (1024, 512),
+                    (9, 6), (27, 18), (81, 54),
+                    (25, 20), (125, 100),
+                };
+
+                foreach (var (n, expected) in cases)
+                {
+                    uint actual = RsaMath.CalcFunctionEulerByFactorization(n);
+                    Assert.That(actual, Is.EqualTo(expected), $"n={n}");
+                }
+            }
+
+            // =====================================================================
+            // CalcFunctionEulerSumUnit
+            // =====================================================================
+
+            [Test]
+            public void SumUnit_AllSmallValues_MatchReference()
+            {
+                for (uint n = 2; n <= 200; n++)
+                {
+                    uint actual = RsaMath.CalcFunctionEulerSumUnit(n);
+                    uint expected = EulerPhiReference(n);
+
+                    Assert.That(actual, Is.EqualTo(expected), $"n={n}");
+                }
+            }
+
+            [Test]
+            public void SumUnit_RandomValues_MatchReference()
+            {
+                for (int i = 0; i < 300; i++)
+                {
+                    uint n = (uint)_random.Next(2, 5000);
+                    uint actual = RsaMath.CalcFunctionEulerSumUnit(n);
+                    uint expected = EulerPhiReference(n);
+
+                    Assert.That(actual, Is.EqualTo(expected), $"n={n}");
+                }
+            }
+
+            [Test]
+            public void SumUnit_Primes_ReturnPminusOne()
+            {
+                uint[] primes = { 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 97, 101 };
+                foreach (uint p in primes)
+                {
+                    uint actual = RsaMath.CalcFunctionEulerSumUnit(p);
+                    Assert.That(actual, Is.EqualTo(p - 1), $"p={p}");
+                }
+            }
+
+            [Test]
+            public void SumUnit_KnownValues()
+            {
+                var cases = new (uint n, uint expected)[]
+                {
+                    (2, 1),
+                    (3, 2),
+                    (4, 2),
+                    (5, 4),
+                    (6, 2),
+                    (10, 4),
+                    (12, 4),
+                    (100, 40),
+                };
+
+                foreach (var (n, expected) in cases)
+                {
+                    uint actual = RsaMath.CalcFunctionEulerSumUnit(n);
+                    Assert.That(actual, Is.EqualTo(expected), $"n={n}");
+                }
+            }
+
+            // =====================================================================
+            // CalcFactorization
+            // =====================================================================
+
+            [Test]
+            public void Factor_One_ReturnsEmpty()
+            {
+                var result = RsaMath.CalcFactorization(1);
+                Assert.That(result, Is.Empty);
+            }
+
+            [Test]
+            public void Factor_Primes_ReturnSingleEntryPowerOne()
+            {
+                uint[] primes = { 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 97, 101, 9973 };
+                foreach (uint p in primes)
+                {
+                    var result = RsaMath.CalcFactorization(p);
+                    Assert.That(result.Count, Is.EqualTo(1), $"p={p}");
+                    Assert.That(result[0].Number, Is.EqualTo(p), $"p={p}");
+                    Assert.That(result[0].Power, Is.EqualTo(1), $"p={p}");
+                }
+            }
+
+            [Test]
+            public void Factor_KnownValues_ExactExpected()
+            {
+                var cases = new (uint n, (uint p, uint e)[] expected)[]
+                {
+                    (4, new[] { (2u, 2u) }),
+                    (8, new[] { (2u, 3u) }),
+                    (12, new[] { (2u, 2u), (3u, 1u) }),
+                    (36, new[] { (2u, 2u), (3u, 2u) }),
+                    (100, new[] { (2u, 2u), (5u, 2u) }),
+                    (360, new[] { (2u, 3u), (3u, 2u), (5u, 1u) }),
+                    (1000, new[] { (2u, 3u), (5u, 3u) }),
+                    (1024, new[] { (2u, 10u) }),
+                };
+
+                foreach (var (n, expected) in cases)
+                {
+                    var result = RsaMath.CalcFactorization(n);
+
+                    Assert.That(result.Count, Is.EqualTo(expected.Length), $"Count for n={n}");
+
+                    for (int i = 0; i < expected.Length; i++)
+                    {
+                        Assert.That(result[i].Number, Is.EqualTo(expected[i].p), $"p[{i}] for n={n}");
+                        Assert.That(result[i].Power, Is.EqualTo(expected[i].e), $"e[{i}] for n={n}");
+                    }
+                }
+            }
+
+            [Test]
+            public void Factor_AllSmallValues_ProductReconstructsNumber()
+            {
+                for (uint n = 2; n <= 3000; n++)
+                {
+                    var factors = RsaMath.CalcFactorization(n);
+
+                    uint product = 1;
+                    foreach (var np in factors)
+                        for (uint k = 0; k < np.Power; k++)
+                            product *= np.Number;
+
+                    Assert.That(product, Is.EqualTo(n), $"Reconstruct n={n}");
+                }
+            }
+
+            [Test]
+            public void Factor_RandomValues_ProductReconstructsNumber()
+            {
+                for (int i = 0; i < 500; i++)
+                {
+                    uint n = (uint)_random.Next(1, 1_000_000);
+                    var factors = RsaMath.CalcFactorization(n);
+
+                    uint product = 1;
+                    foreach (var np in factors)
+                        for (uint k = 0; k < np.Power; k++)
+                            product *= np.Number;
+
+                    Assert.That(product, Is.EqualTo(n), $"Reconstruct n={n}");
+                }
+            }
+
+            [Test]
+            public void Factor_AllFactorsArePrime()
+            {
+                for (uint n = 2; n <= 2000; n++)
+                {
+                    var factors = RsaMath.CalcFactorization(n);
+                    foreach (var np in factors)
+                    {
+                        Assert.That(
+                            IsPrime(np.Number),
+                            Is.True,
+                            $"Factor {np.Number} of {n} is not prime"
+                        );
+                    }
+                }
+            }
+
+            [Test]
+            public void Factor_SortedAscending()
+            {
+                for (uint n = 2; n <= 2000; n++)
+                {
+                    var factors = RsaMath.CalcFactorization(n);
+                    for (int i = 1; i < factors.Count; i++)
+                    {
+                        Assert.That(
+                            factors[i].Number,
+                            Is.GreaterThan(factors[i - 1].Number),
+                            $"Not sorted for n={n}"
+                        );
+                    }
+                }
+            }
+
+            [Test]
+            public void Factor_PowersMatchDirectCount()
+            {
+                for (uint n = 2; n <= 500; n++)
+                {
+                    var factors = RsaMath.CalcFactorization(n);
+                    foreach (var np in factors)
+                    {
+                        uint count = 0;
+                        uint m = n;
+                        while (m % np.Number == 0)
+                        {
+                            count++;
+                            m /= np.Number;
+                        }
+
+                        Assert.That(
+                            np.Power,
+                            Is.EqualTo(count),
+                            $"Power mismatch for p={np.Number}, n={n}"
+                        );
+                    }
+                }
+            }
+        }
     }
 }

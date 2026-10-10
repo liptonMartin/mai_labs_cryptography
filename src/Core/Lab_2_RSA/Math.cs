@@ -9,6 +9,51 @@ public static class Math
         public readonly uint Gcd = gcd;
     }
 
+    public readonly struct NumberPower(uint number, uint power)
+    {
+        public readonly uint Number = number;
+        public readonly uint Power = power;
+    }
+
+    public static double CalcFunctionEulerByDpf(uint number)
+    {
+        double result = 0;
+        for (var k = 1u; k <= number; ++k)
+        {
+            var gcd = EuclidAlgorithm(number, k);
+            var angle = (2 * System.Math.PI * k) / number;
+            var cos = System.Math.Cos(angle);
+            result += gcd * cos;
+        }
+
+        return result;
+    }
+
+    public static uint CalcFunctionEulerByFactorization(uint number)
+    {
+        var factorization = CalcFactorization(number);
+        var result = number;
+        foreach (var numberPower in factorization)
+        {
+            result /= numberPower.Number;
+            result *= numberPower.Number - 1;
+        }
+
+        return result;
+    }
+
+    public static uint CalcFunctionEulerSumUnit(uint a)
+    {
+        var result = 0u;
+        for (var i = 1u; i < a; ++i)
+        {
+            if (EuclidAlgorithm(a, i) == 1)
+                result += 1;
+        }
+
+        return result;
+    }
+
     public static uint BinaryEuclidAlgorithm(uint a, uint b)
     {
         if (a == 0)
@@ -102,5 +147,27 @@ public static class Math
         }
 
         return (uint)result % mod;
+    }
+
+    public static List<NumberPower> CalcFactorization(uint number)
+    {
+        var result = new List<NumberPower>();
+        for (var divisor = 2u; (ulong)divisor * divisor <= number; ++divisor)
+        {
+            uint count = 0;
+            while (number % divisor == 0)
+            {
+                ++count;
+                number /= divisor;
+            }
+
+            if (count != 0)
+                result.Add(new NumberPower(divisor, count));
+        }
+
+        if (number > 1)
+            result.Add(new NumberPower(number, 1));
+
+        return result;
     }
 }
