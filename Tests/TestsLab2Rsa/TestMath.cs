@@ -1530,4 +1530,556 @@ namespace Tests.TestsLab2Rsa
             }
         }
     }
+
+    [TestFixture]
+    public class LcmTests
+    {
+        private Random _random;
+
+        [SetUp]
+        public void SetUp()
+        {
+            _random = new Random(11111);
+        }
+
+        [Test]
+        public void ZeroFirst_ReturnsZero()
+        {
+            Assert.That(RsaMath.CalcLcm(0, 5), Is.EqualTo(0UL));
+            Assert.That(RsaMath.CalcLcm(0, 1), Is.EqualTo(0UL));
+            Assert.That(RsaMath.CalcLcm(0, uint.MaxValue), Is.EqualTo(0UL));
+        }
+
+        [Test]
+        public void ZeroSecond_ReturnsZero()
+        {
+            Assert.That(RsaMath.CalcLcm(5, 0), Is.EqualTo(0UL));
+            Assert.That(RsaMath.CalcLcm(1, 0), Is.EqualTo(0UL));
+            Assert.That(RsaMath.CalcLcm(uint.MaxValue, 0), Is.EqualTo(0UL));
+        }
+        [Test]
+        public void OneAndValue_ReturnsValue()
+        {
+            Assert.That(RsaMath.CalcLcm(1, 5), Is.EqualTo(5UL));
+            Assert.That(RsaMath.CalcLcm(5, 1), Is.EqualTo(5UL));
+            Assert.That(RsaMath.CalcLcm(1, 1), Is.EqualTo(1UL));
+        }
+
+        [Test]
+        public void SimpleCases()
+        {
+            Assert.That(RsaMath.CalcLcm(4, 6), Is.EqualTo(12UL));
+            Assert.That(RsaMath.CalcLcm(6, 4), Is.EqualTo(12UL));
+            Assert.That(RsaMath.CalcLcm(21, 6), Is.EqualTo(42UL));
+            Assert.That(RsaMath.CalcLcm(8, 9), Is.EqualTo(72UL));
+            Assert.That(RsaMath.CalcLcm(12, 15), Is.EqualTo(60UL));
+        }
+
+        [Test]
+        public void OneIsMultipleOfOther_ReturnsLarger()
+        {
+            Assert.That(RsaMath.CalcLcm(5, 10), Is.EqualTo(10UL));
+            Assert.That(RsaMath.CalcLcm(10, 5), Is.EqualTo(10UL));
+            Assert.That(RsaMath.CalcLcm(3, 9), Is.EqualTo(9UL));
+        }
+
+        [Test]
+        public void ArgumentOrder_DoesNotMatter()
+        {
+            Assert.That(
+                RsaMath.CalcLcm(4, 6),
+                Is.EqualTo(RsaMath.CalcLcm(6, 4))
+            );
+            Assert.That(
+                RsaMath.CalcLcm(100, 75),
+                Is.EqualTo(RsaMath.CalcLcm(75, 100))
+            );
+        }
+
+        [Test]
+        public void CompareWithFormulaABDivGcd_AllSmallValues()
+        {
+            for (uint a = 1; a <= 50; a++)
+            {
+                for (uint b = 1; b <= 50; b++)
+                {
+                    ulong gcd = RsaMath.EuclidAlgorithm(a, b);
+                    ulong expected = (ulong)a / gcd * b;
+                    ulong actual = RsaMath.CalcLcm(a, b);
+
+                    Assert.That(actual, Is.EqualTo(expected), $"a={a}, b={b}");
+                }
+            }
+        }
+
+        [Test]
+        public void CompareWithFormulaABDivGcd_RandomValues()
+        {
+            for (int i = 0; i < 1000; i++)
+            {
+                uint a = (uint)_random.Next(1, int.MaxValue);
+                uint b = (uint)_random.Next(1, int.MaxValue);
+
+                ulong gcd = RsaMath.EuclidAlgorithm(a, b);
+                ulong expected = (ulong)a / gcd * b;
+                ulong actual = RsaMath.CalcLcm(a, b);
+
+                Assert.That(actual, Is.EqualTo(expected), $"a={a}, b={b}");
+            }
+        }
+
+        [Test]
+        public void ResultIsDivisibleByBothArguments()
+        {
+            for (int i = 0; i < 500; i++)
+            {
+                uint a = (uint)_random.Next(1, 100_000);
+                uint b = (uint)_random.Next(1, 100_000);
+
+                ulong lcm = RsaMath.CalcLcm(a, b);
+
+                Assert.That(lcm % a, Is.EqualTo(0UL),
+                    $"lcm({a},{b})={lcm} not divisible by {a}");
+                Assert.That(lcm % b, Is.EqualTo(0UL),
+                    $"lcm({a},{b})={lcm} not divisible by {b}");
+            }
+        }
+
+        [Test]
+        public void IsMinimalMultiple_NoSmallerMultipleExists()
+        {
+            for (uint a = 1; a <= 40; a++)
+            {
+                for (uint b = 1; b <= 40; b++)
+                {
+                    ulong lcm = RsaMath.CalcLcm(a, b);
+
+                    for (ulong candidate = 1; candidate < lcm; candidate++)
+                    {
+                        Assert.That(
+                            candidate % a != 0 || candidate % b != 0,
+                            Is.True,
+                            $"Найден меньший общий кратный {candidate} для ({a},{b}), lcm={lcm}"
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    [TestFixture]
+    public class CarmichaelFunctionTests
+    {
+        private Random _random;
+
+        [SetUp]
+        public void SetUp()
+        {
+            _random = new Random(24680);
+        }
+
+        // ---- Референсная реализация λ(n) ----
+
+        private static ulong GcdReference(ulong a, ulong b)
+        {
+            while (b != 0)
+            {
+                var t = b;
+                b = a % b;
+                a = t;
+            }
+
+            return a;
+        }
+
+        private static ulong LcmReference(ulong a, ulong b)
+        {
+            return a / GcdReference(a, b) * b;
+        }
+
+        private static ulong CarmichaelReference(uint n)
+        {
+            if (n == 1)
+                return 1;
+
+            ulong result = 1;
+            uint m = n;
+
+            // Множитель 2
+            if (m % 2 == 0)
+            {
+                uint power = 0;
+                while (m % 2 == 0)
+                {
+                    m /= 2;
+                    power++;
+                }
+
+                ulong lambda2 = power switch
+                {
+                    1 => 1UL,
+                    2 => 2UL,
+                    _ => 1UL << (int)(power - 2)
+                };
+                result = LcmReference(result, lambda2);
+            }
+
+            // Нечётные простые
+            for (uint p = 3; (ulong)p * p <= m; p += 2)
+            {
+                if (m % p == 0)
+                {
+                    uint power = 0;
+                    while (m % p == 0)
+                    {
+                        m /= p;
+                        power++;
+                    }
+
+                    ulong pPow = 1;
+                    for (uint k = 0; k < power - 1; k++)
+                        pPow *= p;
+
+                    ulong lambdaP = pPow * (p - 1);
+                    result = LcmReference(result, lambdaP);
+                }
+            }
+
+            if (m > 1)
+                result = LcmReference(result, m - 1);
+
+            return result;
+        }
+
+        // =====================================================================
+        // Базовые значения
+        // =====================================================================
+
+        [Test]
+        public void One_ReturnsOne()
+        {
+            Assert.That(
+                RsaMath.CalcFunctionCarmichaelByFactorization(1),
+                Is.EqualTo(1UL)
+            );
+        }
+
+        [Test]
+        public void KnownValues()
+        {
+            var cases = new (uint n, ulong expected)[]
+            {
+                (1, 1),
+                (2, 1),
+                (3, 2),
+                (4, 2),
+                (5, 4),
+                (6, 2),
+                (7, 6),
+                (8, 2),
+                (9, 6),
+                (10, 4),
+                (12, 2),
+                (15, 4),
+                (16, 4),
+                (27, 18),
+                (32, 8),
+                (36, 6),
+                (81, 54),
+                (100, 20),
+                (360, 12),
+                (1000, 100),
+            };
+
+            foreach (var (n, expected) in cases)
+            {
+                ulong actual = RsaMath.CalcFunctionCarmichaelByFactorization(n);
+                Assert.That(actual, Is.EqualTo(expected), $"n={n}");
+            }
+        }
+
+        // =====================================================================
+        // Простые, степени простых и степеней двойки
+        // =====================================================================
+
+        [Test]
+        public void Primes_ReturnPminusOne()
+        {
+            // λ(p) = p - 1, кроме λ(2) = 1
+            uint[] primes =
+            {
+                2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31,
+                97, 101, 997, 7919
+            };
+
+            foreach (uint p in primes)
+            {
+                ulong actual = RsaMath.CalcFunctionCarmichaelByFactorization(p);
+                ulong expected = p == 2 ? 1UL : (ulong)(p - 1);
+
+                Assert.That(actual, Is.EqualTo(expected), $"p={p}");
+            }
+        }
+
+        [Test]
+        public void PowersOfTwo_FollowCarmichaelRule()
+        {
+            // λ(2) = 1; λ(4) = 2; λ(2^k) = 2^(k-2) при k >= 3
+            var cases = new (uint n, ulong expected)[]
+            {
+                (2, 1),
+                (4, 2),
+                (8, 2),
+                (16, 4),
+                (32, 8),
+                (64, 16),
+                (128, 32),
+                (256, 64),
+                (512, 128),
+                (1024, 256),
+                (2048, 512),
+                (4096, 1024),
+                (1u << 20, 1UL << 18),
+                (1u << 30, 1UL << 28),
+            };
+
+            foreach (var (n, expected) in cases)
+            {
+                ulong actual = RsaMath.CalcFunctionCarmichaelByFactorization(n);
+                Assert.That(actual, Is.EqualTo(expected), $"n={n}");
+            }
+        }
+
+        [Test]
+        public void PowersOfOddPrimes_UsePhiOfPowerFormula()
+        {
+            // λ(p^k) = p^(k-1) * (p-1)
+            var cases = new (uint n, ulong expected)[]
+            {
+                (3, 2),
+                (9, 6),
+                (27, 18),
+                (81, 54),
+                (243, 162),
+                (5, 4),
+                (25, 20),
+                (125, 100),
+                (7, 6),
+                (49, 42),
+                (11, 10),
+                (121, 110),
+            };
+
+            foreach (var (n, expected) in cases)
+            {
+                ulong actual = RsaMath.CalcFunctionCarmichaelByFactorization(n);
+                Assert.That(actual, Is.EqualTo(expected), $"n={n}");
+            }
+        }
+
+        // =====================================================================
+        // Сравнение с эталоном
+        // =====================================================================
+
+        [Test]
+        public void AllSmallValues_MatchReference()
+        {
+            for (uint n = 1; n <= 1000; n++)
+            {
+                ulong actual = RsaMath.CalcFunctionCarmichaelByFactorization(n);
+                ulong expected = CarmichaelReference(n);
+
+                Assert.That(actual, Is.EqualTo(expected), $"n={n}");
+            }
+        }
+
+        [Test]
+        public void RandomValues_MatchReference()
+        {
+            for (int i = 0; i < 2000; i++)
+            {
+                uint n = (uint)_random.Next(1, 1_000_000);
+
+                ulong actual = RsaMath.CalcFunctionCarmichaelByFactorization(n);
+                ulong expected = CarmichaelReference(n);
+
+                Assert.That(actual, Is.EqualTo(expected), $"n={n}");
+            }
+        }
+
+        [Test]
+        public void LargePrimeSquares_MatchReference()
+        {
+            // 31607 — простое, 31607^2 < 2^32
+            uint[] primes = { 101, 211, 307, 401, 503, 601, 701, 31607 };
+            foreach (uint p in primes)
+            {
+                uint n = p * p;
+                ulong actual = RsaMath.CalcFunctionCarmichaelByFactorization(n);
+                ulong expected = CarmichaelReference(n);
+
+                Assert.That(actual, Is.EqualTo(expected), $"n={n} (= {p}^2)");
+            }
+        }
+
+        [Test]
+        public void Semiprimes_MatchReference()
+        {
+            // Произведения двух простых, в том числе с двойкой
+            uint[] primes = { 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 101, 997 };
+            foreach (uint p in primes)
+            {
+                foreach (uint q in primes)
+                {
+                    ulong n = (ulong)p * q;
+                    if (n < 2 || n > uint.MaxValue)
+                        continue;
+
+                    uint nn = (uint)n;
+                    ulong actual = RsaMath.CalcFunctionCarmichaelByFactorization(nn);
+                    ulong expected = CarmichaelReference(nn);
+
+                    Assert.That(actual, Is.EqualTo(expected), $"n={nn} ({p}*{q})");
+                }
+            }
+        }
+
+        // =====================================================================
+        // Свойства λ(n)
+        // =====================================================================
+
+        [Test]
+        public void DividesEulerPhi()
+        {
+            // λ(n) всегда делит φ(n) — это свойство показателя группы (Z/nZ)*
+            for (uint n = 1; n <= 500; n++)
+            {
+                ulong lambda = RsaMath.CalcFunctionCarmichaelByFactorization(n);
+                ulong phi = RsaMath.CalcFunctionEulerByFactorization(n);
+
+                Assert.That(
+                    phi % lambda,
+                    Is.EqualTo(0UL),
+                    $"λ({n})={lambda} не делит φ({n})={phi}"
+                );
+            }
+        }
+
+        [Test]
+        public void CarmichaelProperty_APowLambdaModNIsOne_ForCoprimeA()
+        {
+            // Для всех a, взаимно простых с n: a^λ(n) ≡ 1 (mod n)
+            for (uint n = 2; n <= 200; n++)
+            {
+                ulong lambda = RsaMath.CalcFunctionCarmichaelByFactorization(n);
+
+                for (uint a = 1; a < n; a++)
+                {
+                    if (RsaMath.EuclidAlgorithm(a, n) != 1)
+                        continue;
+
+                    ulong pow = (ulong)BigInteger.ModPow(a, lambda, n);
+
+                    Assert.That(
+                        pow,
+                        Is.EqualTo(1UL),
+                        $"a={a}, n={n}, λ={lambda}: a^λ mod n = {pow}"
+                    );
+                }
+            }
+        }
+
+        [Test]
+        public void LambdaIsSmallestSuchExponent_SmallN()
+        {
+            // Проверяем, что λ(n) — наименьший показатель,
+            // при котором a^λ ≡ 1 (mod n) для всех a, взаимно простых с n
+            for (uint n = 2; n <= 60; n++)
+            {
+                ulong lambda = RsaMath.CalcFunctionCarmichaelByFactorization(n);
+
+                for (ulong e = 1; e < lambda; e++)
+                {
+                    bool allOnes = true;
+
+                    for (uint a = 1; a < n; a++)
+                    {
+                        if (RsaMath.EuclidAlgorithm(a, n) != 1)
+                            continue;
+
+                        ulong pow = (ulong)BigInteger.ModPow(a, e, n);
+                        if (pow != 1UL)
+                        {
+                            allOnes = false;
+                            break;
+                        }
+                    }
+
+                    Assert.That(
+                        allOnes,
+                        Is.False,
+                        $"Для n={n} найден меньший показатель e={e} < λ={lambda}"
+                    );
+                }
+            }
+        }
+
+        [Test]
+        public void LambdaOfCoprimeProduct_EqualsLcmOfLambdas()
+        {
+            // Если gcd(m, n) = 1, то λ(m*n) = lcm(λ(m), λ(n))
+            var pairs = new (uint m, uint n)[]
+            {
+                (3, 5),
+                (4, 9),
+                (8, 27),
+                (25, 49),
+                (5, 16),
+                (7, 11),
+                (13, 4),
+            };
+
+            foreach (var (m, n) in pairs)
+            {
+                ulong lambdaM = RsaMath.CalcFunctionCarmichaelByFactorization(m);
+                ulong lambdaN = RsaMath.CalcFunctionCarmichaelByFactorization(n);
+                ulong lambdaMN = RsaMath.CalcFunctionCarmichaelByFactorization(m * n);
+
+                ulong expected = RsaMath.CalcLcm(lambdaM, lambdaN);
+
+                Assert.That(
+                    lambdaMN,
+                    Is.EqualTo(expected),
+                    $"λ({m}*{n}) = λ({m * n}) не равно lcm(λ({m}), λ({n}))"
+                );
+            }
+        }
+
+        [Test]
+        public void AlwaysPositive_ForAllSmallN()
+        {
+            for (uint n = 1; n <= 2000; n++)
+            {
+                ulong lambda = RsaMath.CalcFunctionCarmichaelByFactorization(n);
+                Assert.That(lambda, Is.GreaterThan(0UL), $"λ({n}) = 0");
+            }
+        }
+
+        [Test]
+        public void NeverExceedsN_ForAllSmallN()
+        {
+            // λ(n) ≤ φ(n) ≤ n - 1 для n > 1, и λ(1) = 1
+            for (uint n = 1; n <= 2000; n++)
+            {
+                ulong lambda = RsaMath.CalcFunctionCarmichaelByFactorization(n);
+                ulong phi = RsaMath.CalcFunctionEulerByFactorization(n);
+
+                Assert.That(
+                    lambda,
+                    Is.LessThanOrEqualTo(phi),
+                    $"λ({n})={lambda} > φ({n})={phi}"
+                );
+            }
+        }
+    }
 }
