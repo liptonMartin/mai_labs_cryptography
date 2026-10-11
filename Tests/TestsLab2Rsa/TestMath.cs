@@ -17,45 +17,45 @@ namespace Tests.TestsLab2Rsa
         [Test]
         public void ExponentZero_ReturnsOne()
         {
-            Assert.That(RsaMath.FastBinaryPowModule(2, 0, 13), Is.EqualTo(1));
-            Assert.That(RsaMath.FastBinaryPowModule(123, 0, 1000), Is.EqualTo(1));
-            Assert.That(RsaMath.FastBinaryPowModule(0, 0, 13), Is.EqualTo(1));
+            Assert.That(RsaMath.FastBinaryPowModule(2, 0, 13), Is.EqualTo(BigInteger.One));
+            Assert.That(RsaMath.FastBinaryPowModule(123, 0, 1000), Is.EqualTo(BigInteger.One));
+            Assert.That(RsaMath.FastBinaryPowModule(0, 0, 13), Is.EqualTo(BigInteger.One));
         }
 
         [Test]
         public void BaseZero_PositiveExponent_ReturnsZero()
         {
-            Assert.That(RsaMath.FastBinaryPowModule(0, 1, 13), Is.EqualTo(0));
-            Assert.That(RsaMath.FastBinaryPowModule(0, 10, 13), Is.EqualTo(0));
+            Assert.That(RsaMath.FastBinaryPowModule(0, 1, 13), Is.EqualTo(BigInteger.Zero));
+            Assert.That(RsaMath.FastBinaryPowModule(0, 10, 13), Is.EqualTo(BigInteger.Zero));
         }
 
         [Test]
         public void SimpleCases()
         {
-            Assert.That(RsaMath.FastBinaryPowModule(2, 10, 1000), Is.EqualTo(24));
-            Assert.That(RsaMath.FastBinaryPowModule(3, 4, 5), Is.EqualTo(1));
-            Assert.That(RsaMath.FastBinaryPowModule(5, 3, 13), Is.EqualTo(8));
+            Assert.That(RsaMath.FastBinaryPowModule(2, 10, 1000), Is.EqualTo(new BigInteger(24)));
+            Assert.That(RsaMath.FastBinaryPowModule(3, 4, 5), Is.EqualTo(BigInteger.One));
+            Assert.That(RsaMath.FastBinaryPowModule(5, 3, 13), Is.EqualTo(new BigInteger(8)));
         }
 
         [Test]
         public void ModulusOne_ReturnsZero()
         {
-            Assert.That(RsaMath.FastBinaryPowModule(2, 0, 1), Is.EqualTo(0));
-            Assert.That(RsaMath.FastBinaryPowModule(2, 1, 1), Is.EqualTo(0));
-            Assert.That(RsaMath.FastBinaryPowModule(2, 2, 1), Is.EqualTo(0));
+            Assert.That(RsaMath.FastBinaryPowModule(2, 0, 1), Is.EqualTo(BigInteger.Zero));
+            Assert.That(RsaMath.FastBinaryPowModule(2, 1, 1), Is.EqualTo(BigInteger.Zero));
+            Assert.That(RsaMath.FastBinaryPowModule(2, 2, 1), Is.EqualTo(BigInteger.Zero));
         }
 
         [Test]
         public void CompareWithBigIntegerModPow_AllSmallValues()
         {
-            for (uint a = 0; a <= 30; a++)
+            for (BigInteger a = 0; a <= 30; a++)
             {
-                for (uint b = 0; b <= 30; b++)
+                for (BigInteger b = 0; b <= 30; b++)
                 {
-                    for (uint mod = 1; mod <= 30; mod++)
+                    for (BigInteger mod = 1; mod <= 30; mod++)
                     {
-                        uint expected = (uint)BigInteger.ModPow(a, b, mod);
-                        uint actual = RsaMath.FastBinaryPowModule(a, b, mod);
+                        BigInteger expected = BigInteger.ModPow(a, b, mod);
+                        BigInteger actual = RsaMath.FastBinaryPowModule(a, b, mod);
 
                         Assert.That(
                             actual,
@@ -72,12 +72,12 @@ namespace Tests.TestsLab2Rsa
         {
             for (int i = 0; i < 1000; i++)
             {
-                uint a = (uint)_random.Next(0, int.MaxValue);
-                uint b = (uint)_random.Next(0, 1000);
-                uint mod = (uint)_random.Next(1, int.MaxValue);
+                BigInteger a = _random.Next(0, int.MaxValue);
+                BigInteger b = _random.Next(0, 1000);
+                BigInteger mod = _random.Next(1, int.MaxValue);
 
-                uint expected = (uint)BigInteger.ModPow(a, b, mod);
-                uint actual = RsaMath.FastBinaryPowModule(a, b, mod);
+                BigInteger expected = BigInteger.ModPow(a, b, mod);
+                BigInteger actual = RsaMath.FastBinaryPowModule(a, b, mod);
 
                 Assert.That(
                     actual,
@@ -90,12 +90,12 @@ namespace Tests.TestsLab2Rsa
         [Test]
         public void MaxValues_CompareWithBigIntegerModPow()
         {
-            uint a = uint.MaxValue;
-            uint b = 2;
-            uint mod = uint.MaxValue;
+            BigInteger a = uint.MaxValue;
+            BigInteger b = 2;
+            BigInteger mod = uint.MaxValue;
 
-            uint expected = (uint)BigInteger.ModPow(a, b, mod);
-            uint actual = RsaMath.FastBinaryPowModule(a, b, mod);
+            BigInteger expected = BigInteger.ModPow(a, b, mod);
+            BigInteger actual = RsaMath.FastBinaryPowModule(a, b, mod);
 
             Assert.That(actual, Is.EqualTo(expected), $"a={a}, b={b}, mod={mod}");
         }
@@ -129,8 +129,8 @@ namespace Tests.TestsLab2Rsa
         [TestCase(6, 7, -1)]
         [TestCase(7, 7, 0)]
         [TestCase(14, 7, 0)]
-        [TestCase(8, 7, 1)] // 8 mod 7 = 1
-        [TestCase(10, 7, -1)] // 10 mod 7 = 3
+        [TestCase(8, 7, 1)]
+        [TestCase(10, 7, -1)]
         [TestCase(0, 13, 0)]
         [TestCase(1, 13, 1)]
         [TestCase(3, 13, 1)]
@@ -147,34 +147,34 @@ namespace Tests.TestsLab2Rsa
         public void KnownValues(int a, int p, int expected)
         {
             Assert.That(
-                RsaMath.CalcLegendreSymbol((uint)a, (uint)p),
-                Is.EqualTo(expected)
+                RsaMath.CalcLegendreSymbol(a, p),
+                Is.EqualTo(new BigInteger(expected))
             );
         }
 
         [Test]
         public void QuadraticResiduesAndNonResidues_ForSmallOddPrimes()
         {
-            uint[] primes = { 3, 5, 7, 11, 13, 17, 19, 23, 29, 31 };
+            int[] primes = { 3, 5, 7, 11, 13, 17, 19, 23, 29, 31 };
 
-            foreach (uint p in primes)
+            foreach (int p in primes)
             {
-                var residues = new HashSet<uint>();
+                var residues = new HashSet<BigInteger>();
 
-                for (uint x = 0; x < p; x++)
+                for (BigInteger x = 0; x < p; x++)
                 {
                     residues.Add((x * x) % p);
                 }
 
-                for (uint a = 0; a < p; a++)
+                for (BigInteger a = 0; a < p; a++)
                 {
-                    int expected = a == 0
-                        ? 0
+                    BigInteger expected = a == 0
+                        ? BigInteger.Zero
                         : residues.Contains(a)
-                            ? 1
-                            : -1;
+                            ? BigInteger.One
+                            : new BigInteger(-1);
 
-                    int actual = RsaMath.CalcLegendreSymbol(a, p);
+                    BigInteger actual = RsaMath.CalcLegendreSymbol(a, p);
 
                     Assert.That(
                         actual,
@@ -188,14 +188,14 @@ namespace Tests.TestsLab2Rsa
         [Test]
         public void CompareWithEulerCriterion_AllSmallValues()
         {
-            uint[] primes = { 3, 5, 7, 11, 13, 17, 19, 23, 29, 31 };
+            int[] primes = { 3, 5, 7, 11, 13, 17, 19, 23, 29, 31 };
 
-            foreach (uint p in primes)
+            foreach (int p in primes)
             {
-                for (uint a = 0; a <= 50; a++)
+                for (BigInteger a = 0; a <= 50; a++)
                 {
-                    int expected = EulerCriterion(a, p);
-                    int actual = RsaMath.CalcLegendreSymbol(a, p);
+                    BigInteger expected = EulerCriterion(a, p);
+                    BigInteger actual = RsaMath.CalcLegendreSymbol(a, p);
 
                     Assert.That(
                         actual,
@@ -211,7 +211,7 @@ namespace Tests.TestsLab2Rsa
         {
             var random = new Random(12345);
 
-            uint[] primes =
+            int[] primes =
             {
                 3, 5, 7, 11, 13, 17, 19, 23, 29, 31,
                 37, 41, 43, 47, 53, 59, 61, 67, 71, 73,
@@ -220,11 +220,11 @@ namespace Tests.TestsLab2Rsa
 
             for (int i = 0; i < 1000; i++)
             {
-                uint p = primes[random.Next(primes.Length)];
-                uint a = (uint)random.Next(0, int.MaxValue);
+                BigInteger p = primes[random.Next(primes.Length)];
+                BigInteger a = random.Next(0, int.MaxValue);
 
-                int expected = EulerCriterion(a, p);
-                int actual = RsaMath.CalcLegendreSymbol(a, p);
+                BigInteger expected = EulerCriterion(a, p);
+                BigInteger actual = RsaMath.CalcLegendreSymbol(a, p);
 
                 Assert.That(
                     actual,
@@ -242,14 +242,14 @@ namespace Tests.TestsLab2Rsa
             );
         }
 
-        private static int EulerCriterion(uint a, uint p)
+        private static BigInteger EulerCriterion(BigInteger a, BigInteger p)
         {
-            uint mod = a % p;
+            BigInteger mod = a % p;
             if (mod == 0)
-                return 0;
+                return BigInteger.Zero;
 
-            uint pow = (uint)BigInteger.ModPow(a, (p - 1) / 2, p);
-            return pow == p - 1 ? -1 : (int)pow;
+            BigInteger pow = BigInteger.ModPow(a, (p - 1) / 2, p);
+            return pow == p - 1 ? new BigInteger(-1) : pow;
         }
     }
 
@@ -263,8 +263,8 @@ namespace Tests.TestsLab2Rsa
         public void ModulusOne_ReturnsOne(int a, int n, int expected)
         {
             Assert.That(
-                RsaMath.CalcJacobiSymbol((uint)a, (uint)n),
-                Is.EqualTo(expected)
+                RsaMath.CalcJacobiSymbol(a, n),
+                Is.EqualTo(new BigInteger(expected))
             );
         }
 
@@ -287,7 +287,6 @@ namespace Tests.TestsLab2Rsa
         [TestCase(14, 7, 0)]
         [TestCase(8, 7, 1)]
         [TestCase(10, 7, -1)]
-        // n = 9 = 3^2: (a/9) = (a/3)^2
         [TestCase(0, 9, 0)]
         [TestCase(1, 9, 1)]
         [TestCase(2, 9, 1)]
@@ -299,54 +298,49 @@ namespace Tests.TestsLab2Rsa
         [TestCase(8, 9, 1)]
         [TestCase(9, 9, 0)]
         [TestCase(18, 9, 0)]
-        // n = 15 = 3 * 5
         [TestCase(0, 15, 0)]
         [TestCase(1, 15, 1)]
-        [TestCase(2, 15, 1)] // (2/3)(2/5) = (-1)(-1)
+        [TestCase(2, 15, 1)]
         [TestCase(3, 15, 0)]
         [TestCase(4, 15, 1)]
         [TestCase(5, 15, 0)]
         [TestCase(6, 15, 0)]
-        [TestCase(7, 15, -1)] // (1/3)(2/5) = 1 * -1
-        [TestCase(8, 15, 1)] // (2/3)^3(3/5) = -1 * -1
-        [TestCase(11, 15, -1)] // (2/3)(1/5) = -1 * 1
-        [TestCase(13, 15, -1)] // (1/3)(3/5) = 1 * -1
-        [TestCase(14, 15, -1)] // (2/3)(4/5) = -1 * 1
-        // n = 21 = 3 * 7
+        [TestCase(7, 15, -1)]
+        [TestCase(8, 15, 1)]
+        [TestCase(11, 15, -1)]
+        [TestCase(13, 15, -1)]
+        [TestCase(14, 15, -1)]
         [TestCase(0, 21, 0)]
         [TestCase(1, 21, 1)]
-        [TestCase(2, 21, -1)] // (2/3)(2/7) = -1 * 1
+        [TestCase(2, 21, -1)]
         [TestCase(3, 21, 0)]
         [TestCase(4, 21, 1)]
-        [TestCase(5, 21, 1)] // (2/3)(5/7) = -1 * -1
+        [TestCase(5, 21, 1)]
         [TestCase(7, 21, 0)]
-        [TestCase(8, 21, -1)] // (2/3)(1/7) = -1 * 1
-        [TestCase(10, 21, -1)] // (1/3)(3/7) = 1 * -1
-        // n = 25 = 5^2
+        [TestCase(8, 21, -1)]
+        [TestCase(10, 21, -1)]
         [TestCase(0, 25, 0)]
         [TestCase(1, 25, 1)]
-        [TestCase(2, 25, 1)] // (2/5)^2
-        [TestCase(3, 25, 1)] // (3/5)^2
+        [TestCase(2, 25, 1)]
+        [TestCase(3, 25, 1)]
         [TestCase(4, 25, 1)]
         [TestCase(5, 25, 0)]
-        // n = 27 = 3^3
         [TestCase(0, 27, 0)]
         [TestCase(1, 27, 1)]
-        [TestCase(2, 27, -1)] // (2/3)^3
+        [TestCase(2, 27, -1)]
         [TestCase(3, 27, 0)]
-        [TestCase(4, 27, 1)] // (1/3)^3
-        [TestCase(8, 27, -1)] // (2/3)^9
-        // n = 45 = 3^2 * 5
+        [TestCase(4, 27, 1)]
+        [TestCase(8, 27, -1)]
         [TestCase(0, 45, 0)]
         [TestCase(1, 45, 1)]
-        [TestCase(2, 45, -1)] // (2/3)^2 (2/5) = 1 * -1
-        [TestCase(4, 45, 1)] // (1/3)^2 (4/5) = 1 * 1
-        [TestCase(7, 45, -1)] // (1/3)^2 (2/5) = 1 * -1
+        [TestCase(2, 45, -1)]
+        [TestCase(4, 45, 1)]
+        [TestCase(7, 45, -1)]
         public void KnownValues(int a, int n, int expected)
         {
             Assert.That(
-                RsaMath.CalcJacobiSymbol((uint)a, (uint)n),
-                Is.EqualTo(expected),
+                RsaMath.CalcJacobiSymbol(a, n),
+                Is.EqualTo(new BigInteger(expected)),
                 $"a={a}, n={n}"
             );
         }
@@ -354,14 +348,14 @@ namespace Tests.TestsLab2Rsa
         [Test]
         public void AgreementWithLegendre_ForPrimeModuli()
         {
-            uint[] primes = { 3, 5, 7, 11, 13, 17, 19, 23, 29, 31 };
+            int[] primes = { 3, 5, 7, 11, 13, 17, 19, 23, 29, 31 };
 
-            foreach (uint p in primes)
+            foreach (int p in primes)
             {
-                for (uint a = 0; a <= 50; a++)
+                for (BigInteger a = 0; a <= 50; a++)
                 {
-                    int legendre = RsaMath.CalcLegendreSymbol(a, p);
-                    int jacobi = RsaMath.CalcJacobiSymbol(a, p);
+                    BigInteger legendre = RsaMath.CalcLegendreSymbol(a, p);
+                    BigInteger jacobi = RsaMath.CalcJacobiSymbol(a, p);
 
                     Assert.That(
                         jacobi,
@@ -375,14 +369,14 @@ namespace Tests.TestsLab2Rsa
         [Test]
         public void AgreementWithLegendre_AllResiduesForOddPrimes()
         {
-            uint[] primes = { 3, 5, 7, 11, 13, 17, 19, 23, 29, 31 };
+            int[] primes = { 3, 5, 7, 11, 13, 17, 19, 23, 29, 31 };
 
-            foreach (uint p in primes)
+            foreach (int p in primes)
             {
-                for (uint a = 0; a < p; a++)
+                for (BigInteger a = 0; a < p; a++)
                 {
-                    int legendre = RsaMath.CalcLegendreSymbol(a, p);
-                    int jacobi = RsaMath.CalcJacobiSymbol(a, p);
+                    BigInteger legendre = RsaMath.CalcLegendreSymbol(a, p);
+                    BigInteger jacobi = RsaMath.CalcJacobiSymbol(a, p);
 
                     Assert.That(
                         jacobi,
@@ -396,13 +390,12 @@ namespace Tests.TestsLab2Rsa
         [Test]
         public void CompareWithDirectDefinition_AllOddCompositeModuli()
         {
-            // Проверяем все нечётные n от 3 до 199 и все a от 0 до 99
-            for (uint n = 3; n <= 199; n += 2)
+            for (BigInteger n = 3; n <= 199; n += 2)
             {
-                for (uint a = 0; a <= 99; a++)
+                for (BigInteger a = 0; a <= 99; a++)
                 {
-                    int expected = JacobiByDefinition(a, n);
-                    int actual = RsaMath.CalcJacobiSymbol(a, n);
+                    BigInteger expected = JacobiByDefinition(a, n);
+                    BigInteger actual = RsaMath.CalcJacobiSymbol(a, n);
 
                     Assert.That(
                         actual,
@@ -420,12 +413,11 @@ namespace Tests.TestsLab2Rsa
 
             for (int i = 0; i < 2000; i++)
             {
-                // Случайное нечётное n от 3 до 10_000
-                uint n = (uint)(random.Next(1, 5000) * 2 + 1);
-                uint a = (uint)random.Next(0, int.MaxValue);
+                BigInteger n = random.Next(1, 5000) * 2 + 1;
+                BigInteger a = random.Next(0, int.MaxValue);
 
-                int expected = JacobiByDefinition(a, n);
-                int actual = RsaMath.CalcJacobiSymbol(a, n);
+                BigInteger expected = JacobiByDefinition(a, n);
+                BigInteger actual = RsaMath.CalcJacobiSymbol(a, n);
 
                 Assert.That(
                     actual,
@@ -438,18 +430,17 @@ namespace Tests.TestsLab2Rsa
         [Test]
         public void Multiplicativity_InFirstArgument()
         {
-            // (a*b / n) = (a/n) * (b/n)
             var random = new Random(777);
 
             for (int i = 0; i < 500; i++)
             {
-                uint n = (uint)(random.Next(1, 500) * 2 + 1);
-                uint a = (uint)random.Next(0, 10_000);
-                uint b = (uint)random.Next(0, 10_000);
+                BigInteger n = random.Next(1, 500) * 2 + 1;
+                BigInteger a = random.Next(0, 10_000);
+                BigInteger b = random.Next(0, 10_000);
 
-                int left = RsaMath.CalcJacobiSymbol(a * b, n);
-                int right = RsaMath.CalcJacobiSymbol(a, n)
-                            * RsaMath.CalcJacobiSymbol(b, n);
+                BigInteger left = RsaMath.CalcJacobiSymbol(a * b, n);
+                BigInteger right = RsaMath.CalcJacobiSymbol(a, n)
+                                  * RsaMath.CalcJacobiSymbol(b, n);
 
                 Assert.That(
                     left,
@@ -462,18 +453,17 @@ namespace Tests.TestsLab2Rsa
         [Test]
         public void Multiplicativity_InSecondArgument()
         {
-            // (a / m*n) = (a/m) * (a/n), при m,n нечётных
             var random = new Random(888);
 
             for (int i = 0; i < 500; i++)
             {
-                uint m = (uint)(random.Next(1, 50) * 2 + 1);
-                uint n = (uint)(random.Next(1, 50) * 2 + 1);
-                uint a = (uint)random.Next(0, 10_000);
+                BigInteger m = random.Next(1, 50) * 2 + 1;
+                BigInteger n = random.Next(1, 50) * 2 + 1;
+                BigInteger a = random.Next(0, 10_000);
 
-                int left = RsaMath.CalcJacobiSymbol(a, m * n);
-                int right = RsaMath.CalcJacobiSymbol(a, m)
-                            * RsaMath.CalcJacobiSymbol(a, n);
+                BigInteger left = RsaMath.CalcJacobiSymbol(a, m * n);
+                BigInteger right = RsaMath.CalcJacobiSymbol(a, m)
+                                  * RsaMath.CalcJacobiSymbol(a, n);
 
                 Assert.That(
                     left,
@@ -486,19 +476,18 @@ namespace Tests.TestsLab2Rsa
         [Test]
         public void Zero_WhenNotCoprime()
         {
-            // Если gcd(a, n) > 1, символ Якоби равен 0
             var random = new Random(999);
 
             for (int i = 0; i < 500; i++)
             {
-                uint n = (uint)(random.Next(2, 100) * 2 + 1);
-                uint a = n * (uint)random.Next(1, 10);
+                BigInteger n = random.Next(2, 100) * 2 + 1;
+                BigInteger a = n * random.Next(1, 10);
 
-                int actual = RsaMath.CalcJacobiSymbol(a, n);
+                BigInteger actual = RsaMath.CalcJacobiSymbol(a, n);
 
                 Assert.That(
                     actual,
-                    Is.EqualTo(0),
+                    Is.EqualTo(BigInteger.Zero),
                     $"a={a}, n={n}"
                 );
             }
@@ -512,19 +501,15 @@ namespace Tests.TestsLab2Rsa
             );
         }
 
-        // ---- Вспомогательные функции ----
-
-        // Прямое вычисление символа Якоби через факторизацию n
-        // и символ Лежандра для каждого простого множителя.
-        private static int JacobiByDefinition(uint a, uint n)
+        private static BigInteger JacobiByDefinition(BigInteger a, BigInteger n)
         {
             if (n == 0 || n % 2 == 0)
                 throw new ArgumentException("n должно быть положительным нечётным");
 
-            uint m = n;
-            int result = 1;
+            BigInteger m = n;
+            BigInteger result = BigInteger.One;
 
-            for (uint p = 3; p * p <= m; p += 2)
+            for (BigInteger p = 3; p * p <= m; p += 2)
             {
                 while (m % p == 0)
                 {
@@ -539,14 +524,14 @@ namespace Tests.TestsLab2Rsa
             return result;
         }
 
-        private static int LegendreByEuler(uint a, uint p)
+        private static BigInteger LegendreByEuler(BigInteger a, BigInteger p)
         {
-            uint mod = a % p;
+            BigInteger mod = a % p;
             if (mod == 0)
-                return 0;
+                return BigInteger.Zero;
 
-            uint pow = (uint)BigInteger.ModPow(a, (p - 1) / 2, p);
-            return pow == p - 1 ? -1 : (int)pow;
+            BigInteger pow = BigInteger.ModPow(a, (p - 1) / 2, p);
+            return pow == p - 1 ? new BigInteger(-1) : pow;
         }
     }
 
@@ -564,50 +549,50 @@ namespace Tests.TestsLab2Rsa
         [Test]
         public void BothZero_ReturnsZero()
         {
-            Assert.That(RsaMath.EuclidAlgorithm(0, 0), Is.EqualTo(0));
+            Assert.That(RsaMath.EuclidAlgorithm(0, 0), Is.EqualTo(BigInteger.Zero));
         }
 
         [Test]
         public void FirstZero_ReturnsSecond()
         {
-            Assert.That(RsaMath.EuclidAlgorithm(0, 1), Is.EqualTo(1));
-            Assert.That(RsaMath.EuclidAlgorithm(0, 5), Is.EqualTo(5));
-            Assert.That(RsaMath.EuclidAlgorithm(0, 123), Is.EqualTo(123));
+            Assert.That(RsaMath.EuclidAlgorithm(0, 1), Is.EqualTo(BigInteger.One));
+            Assert.That(RsaMath.EuclidAlgorithm(0, 5), Is.EqualTo(new BigInteger(5)));
+            Assert.That(RsaMath.EuclidAlgorithm(0, 123), Is.EqualTo(new BigInteger(123)));
         }
 
         [Test]
         public void SecondZero_ReturnsFirst()
         {
-            Assert.That(RsaMath.EuclidAlgorithm(1, 0), Is.EqualTo(1));
-            Assert.That(RsaMath.EuclidAlgorithm(5, 0), Is.EqualTo(5));
-            Assert.That(RsaMath.EuclidAlgorithm(123, 0), Is.EqualTo(123));
+            Assert.That(RsaMath.EuclidAlgorithm(1, 0), Is.EqualTo(BigInteger.One));
+            Assert.That(RsaMath.EuclidAlgorithm(5, 0), Is.EqualTo(new BigInteger(5)));
+            Assert.That(RsaMath.EuclidAlgorithm(123, 0), Is.EqualTo(new BigInteger(123)));
         }
 
         [Test]
         public void EqualValues_ReturnsSameValue()
         {
-            Assert.That(RsaMath.EuclidAlgorithm(1, 1), Is.EqualTo(1));
-            Assert.That(RsaMath.EuclidAlgorithm(7, 7), Is.EqualTo(7));
-            Assert.That(RsaMath.EuclidAlgorithm(1000, 1000), Is.EqualTo(1000));
+            Assert.That(RsaMath.EuclidAlgorithm(1, 1), Is.EqualTo(BigInteger.One));
+            Assert.That(RsaMath.EuclidAlgorithm(7, 7), Is.EqualTo(new BigInteger(7)));
+            Assert.That(RsaMath.EuclidAlgorithm(1000, 1000), Is.EqualTo(new BigInteger(1000)));
         }
 
         [Test]
         public void SimpleCases()
         {
-            Assert.That(RsaMath.EuclidAlgorithm(48, 18), Is.EqualTo(6));
-            Assert.That(RsaMath.EuclidAlgorithm(18, 48), Is.EqualTo(6));
-            Assert.That(RsaMath.EuclidAlgorithm(54, 24), Is.EqualTo(6));
-            Assert.That(RsaMath.EuclidAlgorithm(17, 5), Is.EqualTo(1));
-            Assert.That(RsaMath.EuclidAlgorithm(100, 75), Is.EqualTo(25));
+            Assert.That(RsaMath.EuclidAlgorithm(48, 18), Is.EqualTo(new BigInteger(6)));
+            Assert.That(RsaMath.EuclidAlgorithm(18, 48), Is.EqualTo(new BigInteger(6)));
+            Assert.That(RsaMath.EuclidAlgorithm(54, 24), Is.EqualTo(new BigInteger(6)));
+            Assert.That(RsaMath.EuclidAlgorithm(17, 5), Is.EqualTo(BigInteger.One));
+            Assert.That(RsaMath.EuclidAlgorithm(100, 75), Is.EqualTo(new BigInteger(25)));
         }
 
         [Test]
         public void OneIsMultipleOfOther_ReturnsSmaller()
         {
-            Assert.That(RsaMath.EuclidAlgorithm(10, 5), Is.EqualTo(5));
-            Assert.That(RsaMath.EuclidAlgorithm(5, 10), Is.EqualTo(5));
-            Assert.That(RsaMath.EuclidAlgorithm(100, 1), Is.EqualTo(1));
-            Assert.That(RsaMath.EuclidAlgorithm(1, 100), Is.EqualTo(1));
+            Assert.That(RsaMath.EuclidAlgorithm(10, 5), Is.EqualTo(new BigInteger(5)));
+            Assert.That(RsaMath.EuclidAlgorithm(5, 10), Is.EqualTo(new BigInteger(5)));
+            Assert.That(RsaMath.EuclidAlgorithm(100, 1), Is.EqualTo(BigInteger.One));
+            Assert.That(RsaMath.EuclidAlgorithm(1, 100), Is.EqualTo(BigInteger.One));
         }
 
         [Test]
@@ -627,12 +612,12 @@ namespace Tests.TestsLab2Rsa
         [Test]
         public void CompareWithBigIntegerGreatestCommonDivisor_AllSmallValues()
         {
-            for (uint a = 0; a <= 30; a++)
+            for (BigInteger a = 0; a <= 30; a++)
             {
-                for (uint b = 0; b <= 30; b++)
+                for (BigInteger b = 0; b <= 30; b++)
                 {
-                    uint expected = (uint)BigInteger.GreatestCommonDivisor(a, b);
-                    uint actual = RsaMath.EuclidAlgorithm(a, b);
+                    BigInteger expected = BigInteger.GreatestCommonDivisor(a, b);
+                    BigInteger actual = RsaMath.EuclidAlgorithm(a, b);
 
                     Assert.That(
                         actual,
@@ -648,11 +633,11 @@ namespace Tests.TestsLab2Rsa
         {
             for (int i = 0; i < 1000; i++)
             {
-                uint a = (uint)_random.Next(0, int.MaxValue);
-                uint b = (uint)_random.Next(0, int.MaxValue);
+                BigInteger a = _random.Next(0, int.MaxValue);
+                BigInteger b = _random.Next(0, int.MaxValue);
 
-                uint expected = (uint)BigInteger.GreatestCommonDivisor(a, b);
-                uint actual = RsaMath.EuclidAlgorithm(a, b);
+                BigInteger expected = BigInteger.GreatestCommonDivisor(a, b);
+                BigInteger actual = RsaMath.EuclidAlgorithm(a, b);
 
                 Assert.That(
                     actual,
@@ -667,12 +652,12 @@ namespace Tests.TestsLab2Rsa
         {
             for (int i = 0; i < 1000; i++)
             {
-                uint factor = (uint)_random.Next(1, 1000);
-                uint a = factor * (uint)_random.Next(1, 1000);
-                uint b = factor * (uint)_random.Next(1, 1000);
+                BigInteger factor = _random.Next(1, 1000);
+                BigInteger a = factor * _random.Next(1, 1000);
+                BigInteger b = factor * _random.Next(1, 1000);
 
-                uint expected = (uint)BigInteger.GreatestCommonDivisor(a, b);
-                uint actual = RsaMath.EuclidAlgorithm(a, b);
+                BigInteger expected = BigInteger.GreatestCommonDivisor(a, b);
+                BigInteger actual = RsaMath.EuclidAlgorithm(a, b);
 
                 Assert.That(
                     actual,
@@ -685,11 +670,11 @@ namespace Tests.TestsLab2Rsa
         [Test]
         public void MaxValues_CompareWithBigIntegerGreatestCommonDivisor()
         {
-            uint a = uint.MaxValue;
-            uint b = uint.MaxValue - 1;
+            BigInteger a = uint.MaxValue;
+            BigInteger b = uint.MaxValue - 1;
 
-            uint expected = (uint)BigInteger.GreatestCommonDivisor(a, b);
-            uint actual = RsaMath.EuclidAlgorithm(a, b);
+            BigInteger expected = BigInteger.GreatestCommonDivisor(a, b);
+            BigInteger actual = RsaMath.EuclidAlgorithm(a, b);
 
             Assert.That(actual, Is.EqualTo(expected), $"a={a}, b={b}");
         }
@@ -697,7 +682,7 @@ namespace Tests.TestsLab2Rsa
         [Test]
         public void MaxValueAndZero_ReturnsMaxValue()
         {
-            uint a = uint.MaxValue;
+            BigInteger a = uint.MaxValue;
 
             Assert.That(RsaMath.EuclidAlgorithm(a, 0), Is.EqualTo(a));
             Assert.That(RsaMath.EuclidAlgorithm(0, a), Is.EqualTo(a));
@@ -706,31 +691,31 @@ namespace Tests.TestsLab2Rsa
         [Test]
         public void MaxValueAndOne_ReturnsOne()
         {
-            Assert.That(RsaMath.EuclidAlgorithm(uint.MaxValue, 1), Is.EqualTo(1));
-            Assert.That(RsaMath.EuclidAlgorithm(1, uint.MaxValue), Is.EqualTo(1));
+            Assert.That(RsaMath.EuclidAlgorithm(uint.MaxValue, 1), Is.EqualTo(BigInteger.One));
+            Assert.That(RsaMath.EuclidAlgorithm(1, uint.MaxValue), Is.EqualTo(BigInteger.One));
         }
 
         [Test]
         public void MaxValueWithItself_ReturnsMaxValue()
         {
-            uint a = uint.MaxValue;
+            BigInteger a = uint.MaxValue;
 
             Assert.That(RsaMath.EuclidAlgorithm(a, a), Is.EqualTo(a));
         }
 
-        private static void AssertBezout(uint a, uint b, RsaMath.BezoutEquationCoefficients coeffs)
+        private static void AssertBezout(BigInteger a, BigInteger b, RsaMath.BezoutEquationCoefficients coeffs)
         {
-            uint expectedGcd = (uint)BigInteger.GreatestCommonDivisor(a, b);
+            BigInteger expectedGcd = BigInteger.GreatestCommonDivisor(a, b);
             Assert.That(
                 coeffs.Gcd,
                 Is.EqualTo(expectedGcd),
                 $"Gcd для a={a}, b={b}"
             );
 
-            BigInteger left = (BigInteger)a * coeffs.X + (BigInteger)b * coeffs.Y;
+            BigInteger left = a * coeffs.X + b * coeffs.Y;
             Assert.That(
                 left,
-                Is.EqualTo((BigInteger)coeffs.Gcd),
+                Is.EqualTo(coeffs.Gcd),
                 $"Тождество Безу для a={a}, b={b}: " +
                 $"{a}*{coeffs.X} + {b}*{coeffs.Y} != {coeffs.Gcd}"
             );
@@ -741,9 +726,9 @@ namespace Tests.TestsLab2Rsa
         {
             var c = RsaMath.ExtendedEuclidAlgorithm(0, 0);
 
-            Assert.That(c.Gcd, Is.EqualTo(0));
-            Assert.That(c.X, Is.EqualTo(1));
-            Assert.That(c.Y, Is.EqualTo(0));
+            Assert.That(c.Gcd, Is.EqualTo(BigInteger.Zero));
+            Assert.That(c.X, Is.EqualTo(BigInteger.One));
+            Assert.That(c.Y, Is.EqualTo(BigInteger.Zero));
             AssertBezout(0, 0, c);
         }
 
@@ -752,9 +737,9 @@ namespace Tests.TestsLab2Rsa
         {
             var c = RsaMath.ExtendedEuclidAlgorithm(0, 5);
 
-            Assert.That(c.Gcd, Is.EqualTo(5));
-            Assert.That(c.X, Is.EqualTo(0));
-            Assert.That(c.Y, Is.EqualTo(1));
+            Assert.That(c.Gcd, Is.EqualTo(new BigInteger(5)));
+            Assert.That(c.X, Is.EqualTo(BigInteger.Zero));
+            Assert.That(c.Y, Is.EqualTo(BigInteger.One));
             AssertBezout(0, 5, c);
         }
 
@@ -763,9 +748,9 @@ namespace Tests.TestsLab2Rsa
         {
             var c = RsaMath.ExtendedEuclidAlgorithm(5, 0);
 
-            Assert.That(c.Gcd, Is.EqualTo(5));
-            Assert.That(c.X, Is.EqualTo(1));
-            Assert.That(c.Y, Is.EqualTo(0));
+            Assert.That(c.Gcd, Is.EqualTo(new BigInteger(5)));
+            Assert.That(c.X, Is.EqualTo(BigInteger.One));
+            Assert.That(c.Y, Is.EqualTo(BigInteger.Zero));
             AssertBezout(5, 0, c);
         }
 
@@ -774,16 +759,16 @@ namespace Tests.TestsLab2Rsa
         {
             var c = RsaMath.ExtendedEuclidAlgorithm(7, 7);
 
-            Assert.That(c.Gcd, Is.EqualTo(7));
-            Assert.That(c.X, Is.EqualTo(0));
-            Assert.That(c.Y, Is.EqualTo(1));
+            Assert.That(c.Gcd, Is.EqualTo(new BigInteger(7)));
+            Assert.That(c.X, Is.EqualTo(BigInteger.Zero));
+            Assert.That(c.Y, Is.EqualTo(BigInteger.One));
             AssertBezout(7, 7, c);
         }
 
         [Test]
         public void ExtendedEuclid_SimpleCases_ExactCoefficients()
         {
-            var cases = new (uint a, uint b, uint gcd, long x, long y)[]
+            var cases = new (int a, int b, int gcd, int x, int y)[]
             {
                 (48, 18, 6, -1, 3),
                 (18, 48, 6, 3, -1),
@@ -796,9 +781,9 @@ namespace Tests.TestsLab2Rsa
             {
                 var c = RsaMath.ExtendedEuclidAlgorithm(a, b);
 
-                Assert.That(c.Gcd, Is.EqualTo(gcd), $"Gcd для {a}, {b}");
-                Assert.That(c.X, Is.EqualTo(x), $"X для {a}, {b}");
-                Assert.That(c.Y, Is.EqualTo(y), $"Y для {a}, {b}");
+                Assert.That(c.Gcd, Is.EqualTo(new BigInteger(gcd)), $"Gcd для {a}, {b}");
+                Assert.That(c.X, Is.EqualTo(new BigInteger(x)), $"X для {a}, {b}");
+                Assert.That(c.Y, Is.EqualTo(new BigInteger(y)), $"Y для {a}, {b}");
                 AssertBezout(a, b, c);
             }
         }
@@ -817,9 +802,9 @@ namespace Tests.TestsLab2Rsa
         [Test]
         public void ExtendedEuclid_CompareWithBigIntegerGcd_AllSmallValues()
         {
-            for (uint a = 0; a <= 30; a++)
+            for (BigInteger a = 0; a <= 30; a++)
             {
-                for (uint b = 0; b <= 30; b++)
+                for (BigInteger b = 0; b <= 30; b++)
                 {
                     var c = RsaMath.ExtendedEuclidAlgorithm(a, b);
                     AssertBezout(a, b, c);
@@ -832,8 +817,8 @@ namespace Tests.TestsLab2Rsa
         {
             for (int i = 0; i < 1000; i++)
             {
-                uint a = (uint)_random.Next(0, int.MaxValue);
-                uint b = (uint)_random.Next(0, int.MaxValue);
+                BigInteger a = _random.Next(0, int.MaxValue);
+                BigInteger b = _random.Next(0, int.MaxValue);
 
                 var c = RsaMath.ExtendedEuclidAlgorithm(a, b);
                 AssertBezout(a, b, c);
@@ -845,16 +830,16 @@ namespace Tests.TestsLab2Rsa
         {
             for (int i = 0; i < 1000; i++)
             {
-                uint factor = (uint)_random.Next(1, 1000);
-                uint a = factor * (uint)_random.Next(1, 1000);
-                uint b = factor * (uint)_random.Next(1, 1000);
+                BigInteger factor = _random.Next(1, 1000);
+                BigInteger a = factor * _random.Next(1, 1000);
+                BigInteger b = factor * _random.Next(1, 1000);
 
                 var c = RsaMath.ExtendedEuclidAlgorithm(a, b);
 
                 AssertBezout(a, b, c);
                 Assert.That(
                     c.Gcd % factor,
-                    Is.EqualTo(0),
+                    Is.EqualTo(BigInteger.Zero),
                     $"Gcd должен делиться на общий множитель factor={factor}"
                 );
             }
@@ -863,8 +848,8 @@ namespace Tests.TestsLab2Rsa
         [Test]
         public void ExtendedEuclid_MaxValues_CompareWithBigIntegerGcd()
         {
-            uint a = uint.MaxValue;
-            uint b = uint.MaxValue - 1;
+            BigInteger a = uint.MaxValue;
+            BigInteger b = uint.MaxValue - 1;
 
             var c = RsaMath.ExtendedEuclidAlgorithm(a, b);
             AssertBezout(a, b, c);
@@ -873,51 +858,51 @@ namespace Tests.TestsLab2Rsa
         [Test]
         public void ExtendedEuclid_MaxValueAndZero_ReturnsMaxValue()
         {
-            uint a = uint.MaxValue;
+            BigInteger a = uint.MaxValue;
 
             var c1 = RsaMath.ExtendedEuclidAlgorithm(a, 0);
             Assert.That(c1.Gcd, Is.EqualTo(a));
-            Assert.That(c1.X, Is.EqualTo(1));
-            Assert.That(c1.Y, Is.EqualTo(0));
+            Assert.That(c1.X, Is.EqualTo(BigInteger.One));
+            Assert.That(c1.Y, Is.EqualTo(BigInteger.Zero));
             AssertBezout(a, 0, c1);
 
             var c2 = RsaMath.ExtendedEuclidAlgorithm(0, a);
             Assert.That(c2.Gcd, Is.EqualTo(a));
-            Assert.That(c2.X, Is.EqualTo(0));
-            Assert.That(c2.Y, Is.EqualTo(1));
+            Assert.That(c2.X, Is.EqualTo(BigInteger.Zero));
+            Assert.That(c2.Y, Is.EqualTo(BigInteger.One));
             AssertBezout(0, a, c2);
         }
 
         [Test]
         public void ExtendedEuclid_MaxValueAndOne_ReturnsOne()
         {
-            uint a = uint.MaxValue;
+            BigInteger a = uint.MaxValue;
 
             var c1 = RsaMath.ExtendedEuclidAlgorithm(a, 1);
-            Assert.That(c1.Gcd, Is.EqualTo(1));
+            Assert.That(c1.Gcd, Is.EqualTo(BigInteger.One));
             AssertBezout(a, 1, c1);
 
             var c2 = RsaMath.ExtendedEuclidAlgorithm(1, a);
-            Assert.That(c2.Gcd, Is.EqualTo(1));
+            Assert.That(c2.Gcd, Is.EqualTo(BigInteger.One));
             AssertBezout(1, a, c2);
         }
 
         [Test]
         public void ExtendedEuclid_MaxValueWithItself_ReturnsMaxValue()
         {
-            uint a = uint.MaxValue;
+            BigInteger a = uint.MaxValue;
 
             var c = RsaMath.ExtendedEuclidAlgorithm(a, a);
 
             Assert.That(c.Gcd, Is.EqualTo(a));
-            Assert.That(c.X, Is.EqualTo(0));
-            Assert.That(c.Y, Is.EqualTo(1));
+            Assert.That(c.X, Is.EqualTo(BigInteger.Zero));
+            Assert.That(c.Y, Is.EqualTo(BigInteger.One));
             AssertBezout(a, a, c);
         }
 
-        private static void AssertBinaryGcd(uint a, uint b, uint actualGcd)
+        private static void AssertBinaryGcd(BigInteger a, BigInteger b, BigInteger actualGcd)
         {
-            uint expectedGcd = (uint)BigInteger.GreatestCommonDivisor(a, b);
+            BigInteger expectedGcd = BigInteger.GreatestCommonDivisor(a, b);
             Assert.That(
                 actualGcd,
                 Is.EqualTo(expectedGcd),
@@ -930,7 +915,7 @@ namespace Tests.TestsLab2Rsa
         {
             var gcd = RsaMath.BinaryEuclidAlgorithm(0, 0);
 
-            Assert.That(gcd, Is.EqualTo(0));
+            Assert.That(gcd, Is.EqualTo(BigInteger.Zero));
             AssertBinaryGcd(0, 0, gcd);
         }
 
@@ -939,7 +924,7 @@ namespace Tests.TestsLab2Rsa
         {
             var gcd = RsaMath.BinaryEuclidAlgorithm(0, 5);
 
-            Assert.That(gcd, Is.EqualTo(5));
+            Assert.That(gcd, Is.EqualTo(new BigInteger(5)));
             AssertBinaryGcd(0, 5, gcd);
         }
 
@@ -948,7 +933,7 @@ namespace Tests.TestsLab2Rsa
         {
             var gcd = RsaMath.BinaryEuclidAlgorithm(5, 0);
 
-            Assert.That(gcd, Is.EqualTo(5));
+            Assert.That(gcd, Is.EqualTo(new BigInteger(5)));
             AssertBinaryGcd(5, 0, gcd);
         }
 
@@ -957,14 +942,14 @@ namespace Tests.TestsLab2Rsa
         {
             var gcd = RsaMath.BinaryEuclidAlgorithm(7, 7);
 
-            Assert.That(gcd, Is.EqualTo(7));
+            Assert.That(gcd, Is.EqualTo(new BigInteger(7)));
             AssertBinaryGcd(7, 7, gcd);
         }
 
         [Test]
         public void BinaryEuclid_SimpleCases_ExactGcd()
         {
-            var cases = new (uint a, uint b, uint gcd)[]
+            var cases = new (int a, int b, int gcd)[]
             {
                 (48, 18, 6),
                 (18, 48, 6),
@@ -980,7 +965,7 @@ namespace Tests.TestsLab2Rsa
             {
                 var gcd = RsaMath.BinaryEuclidAlgorithm(a, b);
 
-                Assert.That(gcd, Is.EqualTo(expectedGcd), $"Gcd для {a}, {b}");
+                Assert.That(gcd, Is.EqualTo(new BigInteger(expectedGcd)), $"Gcd для {a}, {b}");
                 AssertBinaryGcd(a, b, gcd);
             }
         }
@@ -999,9 +984,9 @@ namespace Tests.TestsLab2Rsa
         [Test]
         public void BinaryEuclid_CompareWithBigIntegerGcd_AllSmallValues()
         {
-            for (uint a = 0; a <= 30; a++)
+            for (BigInteger a = 0; a <= 30; a++)
             {
-                for (uint b = 0; b <= 30; b++)
+                for (BigInteger b = 0; b <= 30; b++)
                 {
                     var gcd = RsaMath.BinaryEuclidAlgorithm(a, b);
                     AssertBinaryGcd(a, b, gcd);
@@ -1014,8 +999,8 @@ namespace Tests.TestsLab2Rsa
         {
             for (int i = 0; i < 1000; i++)
             {
-                uint a = (uint)_random.Next(0, int.MaxValue);
-                uint b = (uint)_random.Next(0, int.MaxValue);
+                BigInteger a = _random.Next(0, int.MaxValue);
+                BigInteger b = _random.Next(0, int.MaxValue);
 
                 var gcd = RsaMath.BinaryEuclidAlgorithm(a, b);
                 AssertBinaryGcd(a, b, gcd);
@@ -1027,16 +1012,16 @@ namespace Tests.TestsLab2Rsa
         {
             for (int i = 0; i < 1000; i++)
             {
-                uint factor = (uint)_random.Next(1, 1000);
-                uint a = factor * (uint)_random.Next(1, 1000);
-                uint b = factor * (uint)_random.Next(1, 1000);
+                BigInteger factor = _random.Next(1, 1000);
+                BigInteger a = factor * _random.Next(1, 1000);
+                BigInteger b = factor * _random.Next(1, 1000);
 
                 var gcd = RsaMath.BinaryEuclidAlgorithm(a, b);
 
                 AssertBinaryGcd(a, b, gcd);
                 Assert.That(
                     gcd % factor,
-                    Is.EqualTo(0),
+                    Is.EqualTo(BigInteger.Zero),
                     $"Gcd должен делиться на общий множитель factor={factor}"
                 );
             }
@@ -1045,8 +1030,8 @@ namespace Tests.TestsLab2Rsa
         [Test]
         public void BinaryEuclid_MaxValues_CompareWithBigIntegerGcd()
         {
-            uint a = uint.MaxValue;
-            uint b = uint.MaxValue - 1;
+            BigInteger a = uint.MaxValue;
+            BigInteger b = uint.MaxValue - 1;
 
             var gcd = RsaMath.BinaryEuclidAlgorithm(a, b);
             AssertBinaryGcd(a, b, gcd);
@@ -1055,7 +1040,7 @@ namespace Tests.TestsLab2Rsa
         [Test]
         public void BinaryEuclid_MaxValueAndZero_ReturnsMaxValue()
         {
-            uint a = uint.MaxValue;
+            BigInteger a = uint.MaxValue;
 
             var gcd1 = RsaMath.BinaryEuclidAlgorithm(a, 0);
             Assert.That(gcd1, Is.EqualTo(a));
@@ -1069,21 +1054,21 @@ namespace Tests.TestsLab2Rsa
         [Test]
         public void BinaryEuclid_MaxValueAndOne_ReturnsOne()
         {
-            uint a = uint.MaxValue;
+            BigInteger a = uint.MaxValue;
 
             var gcd1 = RsaMath.BinaryEuclidAlgorithm(a, 1);
-            Assert.That(gcd1, Is.EqualTo(1));
+            Assert.That(gcd1, Is.EqualTo(BigInteger.One));
             AssertBinaryGcd(a, 1, gcd1);
 
             var gcd2 = RsaMath.BinaryEuclidAlgorithm(1, a);
-            Assert.That(gcd2, Is.EqualTo(1));
+            Assert.That(gcd2, Is.EqualTo(BigInteger.One));
             AssertBinaryGcd(1, a, gcd2);
         }
 
         [Test]
         public void BinaryEuclid_MaxValueWithItself_ReturnsMaxValue()
         {
-            uint a = uint.MaxValue;
+            BigInteger a = uint.MaxValue;
 
             var gcd = RsaMath.BinaryEuclidAlgorithm(a, a);
 
@@ -1094,14 +1079,13 @@ namespace Tests.TestsLab2Rsa
         [Test]
         public void BinaryEuclid_PowersOfTwo_ReturnsSmallestPower()
         {
-            // Классический кейс для бинарного алгоритма: общие множители 2
-            var cases = new (uint a, uint b, uint gcd)[]
+            var cases = new (BigInteger a, BigInteger b, BigInteger gcd)[]
             {
                 (8, 4, 4),
                 (16, 24, 8),
                 (1024, 512, 512),
                 (2, 4, 2),
-                (1u << 31, 1u << 30, 1u << 30),
+                (BigInteger.One << 31, BigInteger.One << 30, BigInteger.One << 30),
             };
 
             foreach (var (a, b, expectedGcd) in cases)
@@ -1124,10 +1108,10 @@ namespace Tests.TestsLab2Rsa
                 _random = new Random(54321);
             }
 
-            private static uint EulerPhiReference(uint n)
+            private static BigInteger EulerPhiReference(BigInteger n)
             {
-                uint result = n;
-                uint m = n;
+                BigInteger result = n;
+                BigInteger m = n;
 
                 if (m % 2 == 0)
                 {
@@ -1135,7 +1119,7 @@ namespace Tests.TestsLab2Rsa
                     result -= result / 2;
                 }
 
-                for (uint p = 3; (ulong)p * p <= m; p += 2)
+                for (BigInteger p = 3; p * p <= m; p += 2)
                 {
                     if (m % p == 0)
                     {
@@ -1150,12 +1134,12 @@ namespace Tests.TestsLab2Rsa
                 return result;
             }
 
-            private static bool IsPrime(uint n)
+            private static bool IsPrime(BigInteger n)
             {
                 if (n < 2) return false;
                 if (n == 2) return true;
                 if (n % 2 == 0) return false;
-                for (uint d = 3; (ulong)d * d <= n; d += 2)
+                for (BigInteger d = 3; d * d <= n; d += 2)
                     if (n % d == 0)
                         return false;
                 return true;
@@ -1170,19 +1154,19 @@ namespace Tests.TestsLab2Rsa
             {
                 Assert.That(
                     RsaMath.CalcFunctionEulerByDpf(1),
-                    Is.EqualTo(1.0).Within(1e-9)
+                    Is.EqualTo(BigInteger.One)
                 );
             }
 
             [Test]
             public void Dpf_AllSmallValues_MatchReference()
             {
-                for (uint n = 1; n <= 200; n++)
+                for (BigInteger n = 1; n <= 200; n++)
                 {
-                    double actual = RsaMath.CalcFunctionEulerByDpf(n);
-                    double expected = EulerPhiReference(n);
+                    BigInteger actual = RsaMath.CalcFunctionEulerByDpf(n);
+                    BigInteger expected = EulerPhiReference(n);
 
-                    Assert.That(actual, Is.EqualTo(expected).Within(1e-9), $"n={n}");
+                    Assert.That(actual, Is.EqualTo(expected), $"n={n}");
                 }
             }
 
@@ -1191,22 +1175,22 @@ namespace Tests.TestsLab2Rsa
             {
                 for (int i = 0; i < 200; i++)
                 {
-                    uint n = (uint)_random.Next(1, 5000);
-                    double actual = RsaMath.CalcFunctionEulerByDpf(n);
-                    double expected = EulerPhiReference(n);
+                    BigInteger n = _random.Next(1, 5000);
+                    BigInteger actual = RsaMath.CalcFunctionEulerByDpf(n);
+                    BigInteger expected = EulerPhiReference(n);
 
-                    Assert.That(actual, Is.EqualTo(expected).Within(1e-6), $"n={n}");
+                    Assert.That(actual, Is.EqualTo(expected), $"n={n}");
                 }
             }
 
             [Test]
             public void Dpf_Primes_ReturnPminusOne()
             {
-                uint[] primes = { 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 97, 101, 997 };
-                foreach (uint p in primes)
+                int[] primes = { 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 97, 101, 997 };
+                foreach (int p in primes)
                 {
-                    double actual = RsaMath.CalcFunctionEulerByDpf(p);
-                    Assert.That(actual, Is.EqualTo((double)(p - 1)).Within(1e-9), $"p={p}");
+                    BigInteger actual = RsaMath.CalcFunctionEulerByDpf(p);
+                    Assert.That(actual, Is.EqualTo(new BigInteger(p - 1)), $"p={p}");
                 }
             }
 
@@ -1215,20 +1199,9 @@ namespace Tests.TestsLab2Rsa
             {
                 for (int k = 1; k <= 15; k++)
                 {
-                    uint n = 1u << k;
-                    double actual = RsaMath.CalcFunctionEulerByDpf(n);
-                    Assert.That(actual, Is.EqualTo(n / 2.0).Within(1e-6), $"n={n}");
-                }
-            }
-
-            [Test]
-            public void Dpf_ResultIsIntegerWithinTolerance()
-            {
-                for (uint n = 1; n <= 100; n++)
-                {
-                    double actual = RsaMath.CalcFunctionEulerByDpf(n);
-                    double rounded = Math.Round(actual);
-                    Assert.That(actual, Is.EqualTo(rounded).Within(1e-6), $"n={n}");
+                    BigInteger n = BigInteger.One << k;
+                    BigInteger actual = RsaMath.CalcFunctionEulerByDpf(n);
+                    Assert.That(actual, Is.EqualTo(n / 2), $"n={n}");
                 }
             }
 
@@ -1241,17 +1214,17 @@ namespace Tests.TestsLab2Rsa
             {
                 Assert.That(
                     RsaMath.CalcFunctionEulerByFactorization(1),
-                    Is.EqualTo(1)
+                    Is.EqualTo(BigInteger.One)
                 );
             }
 
             [Test]
             public void FactorizationEuler_AllSmallValues_MatchReference()
             {
-                for (uint n = 1; n <= 1000; n++)
+                for (BigInteger n = 1; n <= 1000; n++)
                 {
-                    uint actual = RsaMath.CalcFunctionEulerByFactorization(n);
-                    uint expected = EulerPhiReference(n);
+                    BigInteger actual = RsaMath.CalcFunctionEulerByFactorization(n);
+                    BigInteger expected = EulerPhiReference(n);
 
                     Assert.That(actual, Is.EqualTo(expected), $"n={n}");
                 }
@@ -1262,9 +1235,9 @@ namespace Tests.TestsLab2Rsa
             {
                 for (int i = 0; i < 2000; i++)
                 {
-                    uint n = (uint)_random.Next(1, 1_000_000);
-                    uint actual = RsaMath.CalcFunctionEulerByFactorization(n);
-                    uint expected = EulerPhiReference(n);
+                    BigInteger n = _random.Next(1, 1_000_000);
+                    BigInteger actual = RsaMath.CalcFunctionEulerByFactorization(n);
+                    BigInteger expected = EulerPhiReference(n);
 
                     Assert.That(actual, Is.EqualTo(expected), $"n={n}");
                 }
@@ -1273,18 +1246,18 @@ namespace Tests.TestsLab2Rsa
             [Test]
             public void FactorizationEuler_Primes_ReturnPminusOne()
             {
-                uint[] primes = { 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 97, 101, 997, 7919 };
-                foreach (uint p in primes)
+                int[] primes = { 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 97, 101, 997, 7919 };
+                foreach (int p in primes)
                 {
-                    uint actual = RsaMath.CalcFunctionEulerByFactorization(p);
-                    Assert.That(actual, Is.EqualTo(p - 1), $"p={p}");
+                    BigInteger actual = RsaMath.CalcFunctionEulerByFactorization(p);
+                    Assert.That(actual, Is.EqualTo(new BigInteger(p - 1)), $"p={p}");
                 }
             }
 
             [Test]
             public void FactorizationEuler_KnownValues()
             {
-                var cases = new (uint n, uint expected)[]
+                var cases = new (int n, int expected)[]
                 {
                     (1, 1),
                     (2, 1),
@@ -1300,15 +1273,15 @@ namespace Tests.TestsLab2Rsa
 
                 foreach (var (n, expected) in cases)
                 {
-                    uint actual = RsaMath.CalcFunctionEulerByFactorization(n);
-                    Assert.That(actual, Is.EqualTo(expected), $"n={n}");
+                    BigInteger actual = RsaMath.CalcFunctionEulerByFactorization(n);
+                    Assert.That(actual, Is.EqualTo(new BigInteger(expected)), $"n={n}");
                 }
             }
 
             [Test]
             public void FactorizationEuler_PowersOfPrime_UsePhiOfPowerFormula()
             {
-                var cases = new (uint n, uint expected)[]
+                var cases = new (int n, int expected)[]
                 {
                     (4, 2), (8, 4), (16, 8), (32, 16), (1024, 512),
                     (9, 6), (27, 18), (81, 54),
@@ -1317,8 +1290,8 @@ namespace Tests.TestsLab2Rsa
 
                 foreach (var (n, expected) in cases)
                 {
-                    uint actual = RsaMath.CalcFunctionEulerByFactorization(n);
-                    Assert.That(actual, Is.EqualTo(expected), $"n={n}");
+                    BigInteger actual = RsaMath.CalcFunctionEulerByFactorization(n);
+                    Assert.That(actual, Is.EqualTo(new BigInteger(expected)), $"n={n}");
                 }
             }
 
@@ -1329,10 +1302,10 @@ namespace Tests.TestsLab2Rsa
             [Test]
             public void SumUnit_AllSmallValues_MatchReference()
             {
-                for (uint n = 2; n <= 200; n++)
+                for (BigInteger n = 2; n <= 200; n++)
                 {
-                    uint actual = RsaMath.CalcFunctionEulerSumUnit(n);
-                    uint expected = EulerPhiReference(n);
+                    BigInteger actual = RsaMath.CalcFunctionEulerSumUnit(n);
+                    BigInteger expected = EulerPhiReference(n);
 
                     Assert.That(actual, Is.EqualTo(expected), $"n={n}");
                 }
@@ -1343,9 +1316,9 @@ namespace Tests.TestsLab2Rsa
             {
                 for (int i = 0; i < 300; i++)
                 {
-                    uint n = (uint)_random.Next(2, 5000);
-                    uint actual = RsaMath.CalcFunctionEulerSumUnit(n);
-                    uint expected = EulerPhiReference(n);
+                    BigInteger n = _random.Next(2, 5000);
+                    BigInteger actual = RsaMath.CalcFunctionEulerSumUnit(n);
+                    BigInteger expected = EulerPhiReference(n);
 
                     Assert.That(actual, Is.EqualTo(expected), $"n={n}");
                 }
@@ -1354,18 +1327,18 @@ namespace Tests.TestsLab2Rsa
             [Test]
             public void SumUnit_Primes_ReturnPminusOne()
             {
-                uint[] primes = { 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 97, 101 };
-                foreach (uint p in primes)
+                int[] primes = { 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 97, 101 };
+                foreach (int p in primes)
                 {
-                    uint actual = RsaMath.CalcFunctionEulerSumUnit(p);
-                    Assert.That(actual, Is.EqualTo(p - 1), $"p={p}");
+                    BigInteger actual = RsaMath.CalcFunctionEulerSumUnit(p);
+                    Assert.That(actual, Is.EqualTo(new BigInteger(p - 1)), $"p={p}");
                 }
             }
 
             [Test]
             public void SumUnit_KnownValues()
             {
-                var cases = new (uint n, uint expected)[]
+                var cases = new (int n, int expected)[]
                 {
                     (2, 1),
                     (3, 2),
@@ -1379,8 +1352,8 @@ namespace Tests.TestsLab2Rsa
 
                 foreach (var (n, expected) in cases)
                 {
-                    uint actual = RsaMath.CalcFunctionEulerSumUnit(n);
-                    Assert.That(actual, Is.EqualTo(expected), $"n={n}");
+                    BigInteger actual = RsaMath.CalcFunctionEulerSumUnit(n);
+                    Assert.That(actual, Is.EqualTo(new BigInteger(expected)), $"n={n}");
                 }
             }
 
@@ -1398,29 +1371,29 @@ namespace Tests.TestsLab2Rsa
             [Test]
             public void Factor_Primes_ReturnSingleEntryPowerOne()
             {
-                uint[] primes = { 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 97, 101, 9973 };
-                foreach (uint p in primes)
+                int[] primes = { 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 97, 101, 9973 };
+                foreach (int p in primes)
                 {
                     var result = RsaMath.CalcFactorization(p);
                     Assert.That(result.Count, Is.EqualTo(1), $"p={p}");
-                    Assert.That(result[0].Number, Is.EqualTo(p), $"p={p}");
-                    Assert.That(result[0].Power, Is.EqualTo(1), $"p={p}");
+                    Assert.That(result[0].Number, Is.EqualTo(new BigInteger(p)), $"p={p}");
+                    Assert.That(result[0].Power, Is.EqualTo(BigInteger.One), $"p={p}");
                 }
             }
 
             [Test]
             public void Factor_KnownValues_ExactExpected()
             {
-                var cases = new (uint n, (uint p, uint e)[] expected)[]
+                var cases = new (int n, (int p, int e)[] expected)[]
                 {
-                    (4, new[] { (2u, 2u) }),
-                    (8, new[] { (2u, 3u) }),
-                    (12, new[] { (2u, 2u), (3u, 1u) }),
-                    (36, new[] { (2u, 2u), (3u, 2u) }),
-                    (100, new[] { (2u, 2u), (5u, 2u) }),
-                    (360, new[] { (2u, 3u), (3u, 2u), (5u, 1u) }),
-                    (1000, new[] { (2u, 3u), (5u, 3u) }),
-                    (1024, new[] { (2u, 10u) }),
+                    (4, new[] { (2, 2) }),
+                    (8, new[] { (2, 3) }),
+                    (12, new[] { (2, 2), (3, 1) }),
+                    (36, new[] { (2, 2), (3, 2) }),
+                    (100, new[] { (2, 2), (5, 2) }),
+                    (360, new[] { (2, 3), (3, 2), (5, 1) }),
+                    (1000, new[] { (2, 3), (5, 3) }),
+                    (1024, new[] { (2, 10) }),
                 };
 
                 foreach (var (n, expected) in cases)
@@ -1431,8 +1404,8 @@ namespace Tests.TestsLab2Rsa
 
                     for (int i = 0; i < expected.Length; i++)
                     {
-                        Assert.That(result[i].Number, Is.EqualTo(expected[i].p), $"p[{i}] for n={n}");
-                        Assert.That(result[i].Power, Is.EqualTo(expected[i].e), $"e[{i}] for n={n}");
+                        Assert.That(result[i].Number, Is.EqualTo(new BigInteger(expected[i].p)), $"p[{i}] for n={n}");
+                        Assert.That(result[i].Power, Is.EqualTo(new BigInteger(expected[i].e)), $"e[{i}] for n={n}");
                     }
                 }
             }
@@ -1440,13 +1413,13 @@ namespace Tests.TestsLab2Rsa
             [Test]
             public void Factor_AllSmallValues_ProductReconstructsNumber()
             {
-                for (uint n = 2; n <= 3000; n++)
+                for (BigInteger n = 2; n <= 3000; n++)
                 {
                     var factors = RsaMath.CalcFactorization(n);
 
-                    uint product = 1;
+                    BigInteger product = BigInteger.One;
                     foreach (var np in factors)
-                        for (uint k = 0; k < np.Power; k++)
+                        for (BigInteger k = 0; k < np.Power; k++)
                             product *= np.Number;
 
                     Assert.That(product, Is.EqualTo(n), $"Reconstruct n={n}");
@@ -1458,12 +1431,12 @@ namespace Tests.TestsLab2Rsa
             {
                 for (int i = 0; i < 500; i++)
                 {
-                    uint n = (uint)_random.Next(1, 1_000_000);
+                    BigInteger n = _random.Next(1, 1_000_000);
                     var factors = RsaMath.CalcFactorization(n);
 
-                    uint product = 1;
+                    BigInteger product = BigInteger.One;
                     foreach (var np in factors)
-                        for (uint k = 0; k < np.Power; k++)
+                        for (BigInteger k = 0; k < np.Power; k++)
                             product *= np.Number;
 
                     Assert.That(product, Is.EqualTo(n), $"Reconstruct n={n}");
@@ -1473,7 +1446,7 @@ namespace Tests.TestsLab2Rsa
             [Test]
             public void Factor_AllFactorsArePrime()
             {
-                for (uint n = 2; n <= 2000; n++)
+                for (BigInteger n = 2; n <= 2000; n++)
                 {
                     var factors = RsaMath.CalcFactorization(n);
                     foreach (var np in factors)
@@ -1490,7 +1463,7 @@ namespace Tests.TestsLab2Rsa
             [Test]
             public void Factor_SortedAscending()
             {
-                for (uint n = 2; n <= 2000; n++)
+                for (BigInteger n = 2; n <= 2000; n++)
                 {
                     var factors = RsaMath.CalcFactorization(n);
                     for (int i = 1; i < factors.Count; i++)
@@ -1507,13 +1480,13 @@ namespace Tests.TestsLab2Rsa
             [Test]
             public void Factor_PowersMatchDirectCount()
             {
-                for (uint n = 2; n <= 500; n++)
+                for (BigInteger n = 2; n <= 500; n++)
                 {
                     var factors = RsaMath.CalcFactorization(n);
                     foreach (var np in factors)
                     {
-                        uint count = 0;
-                        uint m = n;
+                        BigInteger count = 0;
+                        BigInteger m = n;
                         while (m % np.Number == 0)
                         {
                             count++;
@@ -1545,42 +1518,43 @@ namespace Tests.TestsLab2Rsa
         [Test]
         public void ZeroFirst_ReturnsZero()
         {
-            Assert.That(RsaMath.CalcLcm(0, 5), Is.EqualTo(0UL));
-            Assert.That(RsaMath.CalcLcm(0, 1), Is.EqualTo(0UL));
-            Assert.That(RsaMath.CalcLcm(0, uint.MaxValue), Is.EqualTo(0UL));
+            Assert.That(RsaMath.CalcLcm(0, 5), Is.EqualTo(BigInteger.Zero));
+            Assert.That(RsaMath.CalcLcm(0, 1), Is.EqualTo(BigInteger.Zero));
+            Assert.That(RsaMath.CalcLcm(0, uint.MaxValue), Is.EqualTo(BigInteger.Zero));
         }
 
         [Test]
         public void ZeroSecond_ReturnsZero()
         {
-            Assert.That(RsaMath.CalcLcm(5, 0), Is.EqualTo(0UL));
-            Assert.That(RsaMath.CalcLcm(1, 0), Is.EqualTo(0UL));
-            Assert.That(RsaMath.CalcLcm(uint.MaxValue, 0), Is.EqualTo(0UL));
+            Assert.That(RsaMath.CalcLcm(5, 0), Is.EqualTo(BigInteger.Zero));
+            Assert.That(RsaMath.CalcLcm(1, 0), Is.EqualTo(BigInteger.Zero));
+            Assert.That(RsaMath.CalcLcm(uint.MaxValue, 0), Is.EqualTo(BigInteger.Zero));
         }
+
         [Test]
         public void OneAndValue_ReturnsValue()
         {
-            Assert.That(RsaMath.CalcLcm(1, 5), Is.EqualTo(5UL));
-            Assert.That(RsaMath.CalcLcm(5, 1), Is.EqualTo(5UL));
-            Assert.That(RsaMath.CalcLcm(1, 1), Is.EqualTo(1UL));
+            Assert.That(RsaMath.CalcLcm(1, 5), Is.EqualTo(new BigInteger(5)));
+            Assert.That(RsaMath.CalcLcm(5, 1), Is.EqualTo(new BigInteger(5)));
+            Assert.That(RsaMath.CalcLcm(1, 1), Is.EqualTo(BigInteger.One));
         }
 
         [Test]
         public void SimpleCases()
         {
-            Assert.That(RsaMath.CalcLcm(4, 6), Is.EqualTo(12UL));
-            Assert.That(RsaMath.CalcLcm(6, 4), Is.EqualTo(12UL));
-            Assert.That(RsaMath.CalcLcm(21, 6), Is.EqualTo(42UL));
-            Assert.That(RsaMath.CalcLcm(8, 9), Is.EqualTo(72UL));
-            Assert.That(RsaMath.CalcLcm(12, 15), Is.EqualTo(60UL));
+            Assert.That(RsaMath.CalcLcm(4, 6), Is.EqualTo(new BigInteger(12)));
+            Assert.That(RsaMath.CalcLcm(6, 4), Is.EqualTo(new BigInteger(12)));
+            Assert.That(RsaMath.CalcLcm(21, 6), Is.EqualTo(new BigInteger(42)));
+            Assert.That(RsaMath.CalcLcm(8, 9), Is.EqualTo(new BigInteger(72)));
+            Assert.That(RsaMath.CalcLcm(12, 15), Is.EqualTo(new BigInteger(60)));
         }
 
         [Test]
         public void OneIsMultipleOfOther_ReturnsLarger()
         {
-            Assert.That(RsaMath.CalcLcm(5, 10), Is.EqualTo(10UL));
-            Assert.That(RsaMath.CalcLcm(10, 5), Is.EqualTo(10UL));
-            Assert.That(RsaMath.CalcLcm(3, 9), Is.EqualTo(9UL));
+            Assert.That(RsaMath.CalcLcm(5, 10), Is.EqualTo(new BigInteger(10)));
+            Assert.That(RsaMath.CalcLcm(10, 5), Is.EqualTo(new BigInteger(10)));
+            Assert.That(RsaMath.CalcLcm(3, 9), Is.EqualTo(new BigInteger(9)));
         }
 
         [Test]
@@ -1599,13 +1573,13 @@ namespace Tests.TestsLab2Rsa
         [Test]
         public void CompareWithFormulaABDivGcd_AllSmallValues()
         {
-            for (uint a = 1; a <= 50; a++)
+            for (BigInteger a = 1; a <= 50; a++)
             {
-                for (uint b = 1; b <= 50; b++)
+                for (BigInteger b = 1; b <= 50; b++)
                 {
-                    ulong gcd = RsaMath.EuclidAlgorithm(a, b);
-                    ulong expected = (ulong)a / gcd * b;
-                    ulong actual = RsaMath.CalcLcm(a, b);
+                    BigInteger gcd = RsaMath.EuclidAlgorithm(a, b);
+                    BigInteger expected = a / gcd * b;
+                    BigInteger actual = RsaMath.CalcLcm(a, b);
 
                     Assert.That(actual, Is.EqualTo(expected), $"a={a}, b={b}");
                 }
@@ -1617,12 +1591,12 @@ namespace Tests.TestsLab2Rsa
         {
             for (int i = 0; i < 1000; i++)
             {
-                uint a = (uint)_random.Next(1, int.MaxValue);
-                uint b = (uint)_random.Next(1, int.MaxValue);
+                BigInteger a = _random.Next(1, int.MaxValue);
+                BigInteger b = _random.Next(1, int.MaxValue);
 
-                ulong gcd = RsaMath.EuclidAlgorithm(a, b);
-                ulong expected = (ulong)a / gcd * b;
-                ulong actual = RsaMath.CalcLcm(a, b);
+                BigInteger gcd = RsaMath.EuclidAlgorithm(a, b);
+                BigInteger expected = a / gcd * b;
+                BigInteger actual = RsaMath.CalcLcm(a, b);
 
                 Assert.That(actual, Is.EqualTo(expected), $"a={a}, b={b}");
             }
@@ -1633,14 +1607,14 @@ namespace Tests.TestsLab2Rsa
         {
             for (int i = 0; i < 500; i++)
             {
-                uint a = (uint)_random.Next(1, 100_000);
-                uint b = (uint)_random.Next(1, 100_000);
+                BigInteger a = _random.Next(1, 100_000);
+                BigInteger b = _random.Next(1, 100_000);
 
-                ulong lcm = RsaMath.CalcLcm(a, b);
+                BigInteger lcm = RsaMath.CalcLcm(a, b);
 
-                Assert.That(lcm % a, Is.EqualTo(0UL),
+                Assert.That(lcm % a, Is.EqualTo(BigInteger.Zero),
                     $"lcm({a},{b})={lcm} not divisible by {a}");
-                Assert.That(lcm % b, Is.EqualTo(0UL),
+                Assert.That(lcm % b, Is.EqualTo(BigInteger.Zero),
                     $"lcm({a},{b})={lcm} not divisible by {b}");
             }
         }
@@ -1648,13 +1622,13 @@ namespace Tests.TestsLab2Rsa
         [Test]
         public void IsMinimalMultiple_NoSmallerMultipleExists()
         {
-            for (uint a = 1; a <= 40; a++)
+            for (BigInteger a = 1; a <= 40; a++)
             {
-                for (uint b = 1; b <= 40; b++)
+                for (BigInteger b = 1; b <= 40; b++)
                 {
-                    ulong lcm = RsaMath.CalcLcm(a, b);
+                    BigInteger lcm = RsaMath.CalcLcm(a, b);
 
-                    for (ulong candidate = 1; candidate < lcm; candidate++)
+                    for (BigInteger candidate = 1; candidate < lcm; candidate++)
                     {
                         Assert.That(
                             candidate % a != 0 || candidate % b != 0,
@@ -1680,7 +1654,7 @@ namespace Tests.TestsLab2Rsa
 
         // ---- Референсная реализация λ(n) ----
 
-        private static ulong GcdReference(ulong a, ulong b)
+        private static BigInteger GcdReference(BigInteger a, BigInteger b)
         {
             while (b != 0)
             {
@@ -1692,55 +1666,50 @@ namespace Tests.TestsLab2Rsa
             return a;
         }
 
-        private static ulong LcmReference(ulong a, ulong b)
+        private static BigInteger LcmReference(BigInteger a, BigInteger b)
         {
             return a / GcdReference(a, b) * b;
         }
 
-        private static ulong CarmichaelReference(uint n)
+        private static BigInteger CarmichaelReference(BigInteger n)
         {
             if (n == 1)
-                return 1;
+                return BigInteger.One;
 
-            ulong result = 1;
-            uint m = n;
+            BigInteger result = BigInteger.One;
+            BigInteger m = n;
 
-            // Множитель 2
             if (m % 2 == 0)
             {
-                uint power = 0;
+                int power = 0;
                 while (m % 2 == 0)
                 {
                     m /= 2;
                     power++;
                 }
 
-                ulong lambda2 = power switch
+                BigInteger lambda2 = power switch
                 {
-                    1 => 1UL,
-                    2 => 2UL,
-                    _ => 1UL << (int)(power - 2)
+                    1 => BigInteger.One,
+                    2 => new BigInteger(2),
+                    _ => BigInteger.One << (power - 2)
                 };
                 result = LcmReference(result, lambda2);
             }
 
-            // Нечётные простые
-            for (uint p = 3; (ulong)p * p <= m; p += 2)
+            for (BigInteger p = 3; p * p <= m; p += 2)
             {
                 if (m % p == 0)
                 {
-                    uint power = 0;
+                    int power = 0;
                     while (m % p == 0)
                     {
                         m /= p;
                         power++;
                     }
 
-                    ulong pPow = 1;
-                    for (uint k = 0; k < power - 1; k++)
-                        pPow *= p;
-
-                    ulong lambdaP = pPow * (p - 1);
+                    BigInteger pPow = BigInteger.Pow(p, power - 1);
+                    BigInteger lambdaP = pPow * (p - 1);
                     result = LcmReference(result, lambdaP);
                 }
             }
@@ -1760,14 +1729,14 @@ namespace Tests.TestsLab2Rsa
         {
             Assert.That(
                 RsaMath.CalcFunctionCarmichaelByFactorization(1),
-                Is.EqualTo(1UL)
+                Is.EqualTo(BigInteger.One)
             );
         }
 
         [Test]
         public void KnownValues()
         {
-            var cases = new (uint n, ulong expected)[]
+            var cases = new (int n, int expected)[]
             {
                 (1, 1),
                 (2, 1),
@@ -1793,8 +1762,8 @@ namespace Tests.TestsLab2Rsa
 
             foreach (var (n, expected) in cases)
             {
-                ulong actual = RsaMath.CalcFunctionCarmichaelByFactorization(n);
-                Assert.That(actual, Is.EqualTo(expected), $"n={n}");
+                BigInteger actual = RsaMath.CalcFunctionCarmichaelByFactorization(n);
+                Assert.That(actual, Is.EqualTo(new BigInteger(expected)), $"n={n}");
             }
         }
 
@@ -1805,17 +1774,16 @@ namespace Tests.TestsLab2Rsa
         [Test]
         public void Primes_ReturnPminusOne()
         {
-            // λ(p) = p - 1, кроме λ(2) = 1
-            uint[] primes =
+            int[] primes =
             {
                 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31,
                 97, 101, 997, 7919
             };
 
-            foreach (uint p in primes)
+            foreach (int p in primes)
             {
-                ulong actual = RsaMath.CalcFunctionCarmichaelByFactorization(p);
-                ulong expected = p == 2 ? 1UL : (ulong)(p - 1);
+                BigInteger actual = RsaMath.CalcFunctionCarmichaelByFactorization(p);
+                BigInteger expected = p == 2 ? BigInteger.One : new BigInteger(p - 1);
 
                 Assert.That(actual, Is.EqualTo(expected), $"p={p}");
             }
@@ -1824,8 +1792,7 @@ namespace Tests.TestsLab2Rsa
         [Test]
         public void PowersOfTwo_FollowCarmichaelRule()
         {
-            // λ(2) = 1; λ(4) = 2; λ(2^k) = 2^(k-2) при k >= 3
-            var cases = new (uint n, ulong expected)[]
+            var cases = new (BigInteger n, BigInteger expected)[]
             {
                 (2, 1),
                 (4, 2),
@@ -1839,13 +1806,13 @@ namespace Tests.TestsLab2Rsa
                 (1024, 256),
                 (2048, 512),
                 (4096, 1024),
-                (1u << 20, 1UL << 18),
-                (1u << 30, 1UL << 28),
+                (BigInteger.One << 20, BigInteger.One << 18),
+                (BigInteger.One << 30, BigInteger.One << 28),
             };
 
             foreach (var (n, expected) in cases)
             {
-                ulong actual = RsaMath.CalcFunctionCarmichaelByFactorization(n);
+                BigInteger actual = RsaMath.CalcFunctionCarmichaelByFactorization(n);
                 Assert.That(actual, Is.EqualTo(expected), $"n={n}");
             }
         }
@@ -1853,8 +1820,7 @@ namespace Tests.TestsLab2Rsa
         [Test]
         public void PowersOfOddPrimes_UsePhiOfPowerFormula()
         {
-            // λ(p^k) = p^(k-1) * (p-1)
-            var cases = new (uint n, ulong expected)[]
+            var cases = new (int n, int expected)[]
             {
                 (3, 2),
                 (9, 6),
@@ -1872,8 +1838,8 @@ namespace Tests.TestsLab2Rsa
 
             foreach (var (n, expected) in cases)
             {
-                ulong actual = RsaMath.CalcFunctionCarmichaelByFactorization(n);
-                Assert.That(actual, Is.EqualTo(expected), $"n={n}");
+                BigInteger actual = RsaMath.CalcFunctionCarmichaelByFactorization(n);
+                Assert.That(actual, Is.EqualTo(new BigInteger(expected)), $"n={n}");
             }
         }
 
@@ -1884,10 +1850,10 @@ namespace Tests.TestsLab2Rsa
         [Test]
         public void AllSmallValues_MatchReference()
         {
-            for (uint n = 1; n <= 1000; n++)
+            for (BigInteger n = 1; n <= 1000; n++)
             {
-                ulong actual = RsaMath.CalcFunctionCarmichaelByFactorization(n);
-                ulong expected = CarmichaelReference(n);
+                BigInteger actual = RsaMath.CalcFunctionCarmichaelByFactorization(n);
+                BigInteger expected = CarmichaelReference(n);
 
                 Assert.That(actual, Is.EqualTo(expected), $"n={n}");
             }
@@ -1898,10 +1864,10 @@ namespace Tests.TestsLab2Rsa
         {
             for (int i = 0; i < 2000; i++)
             {
-                uint n = (uint)_random.Next(1, 1_000_000);
+                BigInteger n = _random.Next(1, 1_000_000);
 
-                ulong actual = RsaMath.CalcFunctionCarmichaelByFactorization(n);
-                ulong expected = CarmichaelReference(n);
+                BigInteger actual = RsaMath.CalcFunctionCarmichaelByFactorization(n);
+                BigInteger expected = CarmichaelReference(n);
 
                 Assert.That(actual, Is.EqualTo(expected), $"n={n}");
             }
@@ -1910,13 +1876,12 @@ namespace Tests.TestsLab2Rsa
         [Test]
         public void LargePrimeSquares_MatchReference()
         {
-            // 31607 — простое, 31607^2 < 2^32
-            uint[] primes = { 101, 211, 307, 401, 503, 601, 701, 31607 };
-            foreach (uint p in primes)
+            int[] primes = { 101, 211, 307, 401, 503, 601, 701, 31607 };
+            foreach (int p in primes)
             {
-                uint n = p * p;
-                ulong actual = RsaMath.CalcFunctionCarmichaelByFactorization(n);
-                ulong expected = CarmichaelReference(n);
+                BigInteger n = (BigInteger)p * p;
+                BigInteger actual = RsaMath.CalcFunctionCarmichaelByFactorization(n);
+                BigInteger expected = CarmichaelReference(n);
 
                 Assert.That(actual, Is.EqualTo(expected), $"n={n} (= {p}^2)");
             }
@@ -1925,21 +1890,16 @@ namespace Tests.TestsLab2Rsa
         [Test]
         public void Semiprimes_MatchReference()
         {
-            // Произведения двух простых, в том числе с двойкой
-            uint[] primes = { 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 101, 997 };
-            foreach (uint p in primes)
+            int[] primes = { 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 101, 997 };
+            foreach (int p in primes)
             {
-                foreach (uint q in primes)
+                foreach (int q in primes)
                 {
-                    ulong n = (ulong)p * q;
-                    if (n < 2 || n > uint.MaxValue)
-                        continue;
+                    BigInteger n = (BigInteger)p * q;
+                    BigInteger actual = RsaMath.CalcFunctionCarmichaelByFactorization(n);
+                    BigInteger expected = CarmichaelReference(n);
 
-                    uint nn = (uint)n;
-                    ulong actual = RsaMath.CalcFunctionCarmichaelByFactorization(nn);
-                    ulong expected = CarmichaelReference(nn);
-
-                    Assert.That(actual, Is.EqualTo(expected), $"n={nn} ({p}*{q})");
+                    Assert.That(actual, Is.EqualTo(expected), $"n={n} ({p}*{q})");
                 }
             }
         }
@@ -1951,15 +1911,14 @@ namespace Tests.TestsLab2Rsa
         [Test]
         public void DividesEulerPhi()
         {
-            // λ(n) всегда делит φ(n) — это свойство показателя группы (Z/nZ)*
-            for (uint n = 1; n <= 500; n++)
+            for (BigInteger n = 1; n <= 500; n++)
             {
-                ulong lambda = RsaMath.CalcFunctionCarmichaelByFactorization(n);
-                ulong phi = RsaMath.CalcFunctionEulerByFactorization(n);
+                BigInteger lambda = RsaMath.CalcFunctionCarmichaelByFactorization(n);
+                BigInteger phi = RsaMath.CalcFunctionEulerByFactorization(n);
 
                 Assert.That(
                     phi % lambda,
-                    Is.EqualTo(0UL),
+                    Is.EqualTo(BigInteger.Zero),
                     $"λ({n})={lambda} не делит φ({n})={phi}"
                 );
             }
@@ -1968,21 +1927,20 @@ namespace Tests.TestsLab2Rsa
         [Test]
         public void CarmichaelProperty_APowLambdaModNIsOne_ForCoprimeA()
         {
-            // Для всех a, взаимно простых с n: a^λ(n) ≡ 1 (mod n)
-            for (uint n = 2; n <= 200; n++)
+            for (BigInteger n = 2; n <= 200; n++)
             {
-                ulong lambda = RsaMath.CalcFunctionCarmichaelByFactorization(n);
+                BigInteger lambda = RsaMath.CalcFunctionCarmichaelByFactorization(n);
 
-                for (uint a = 1; a < n; a++)
+                for (BigInteger a = 1; a < n; a++)
                 {
                     if (RsaMath.EuclidAlgorithm(a, n) != 1)
                         continue;
 
-                    ulong pow = (ulong)BigInteger.ModPow(a, lambda, n);
+                    BigInteger pow = BigInteger.ModPow(a, lambda, n);
 
                     Assert.That(
                         pow,
-                        Is.EqualTo(1UL),
+                        Is.EqualTo(BigInteger.One),
                         $"a={a}, n={n}, λ={lambda}: a^λ mod n = {pow}"
                     );
                 }
@@ -1992,23 +1950,21 @@ namespace Tests.TestsLab2Rsa
         [Test]
         public void LambdaIsSmallestSuchExponent_SmallN()
         {
-            // Проверяем, что λ(n) — наименьший показатель,
-            // при котором a^λ ≡ 1 (mod n) для всех a, взаимно простых с n
-            for (uint n = 2; n <= 60; n++)
+            for (BigInteger n = 2; n <= 60; n++)
             {
-                ulong lambda = RsaMath.CalcFunctionCarmichaelByFactorization(n);
+                BigInteger lambda = RsaMath.CalcFunctionCarmichaelByFactorization(n);
 
-                for (ulong e = 1; e < lambda; e++)
+                for (BigInteger e = 1; e < lambda; e++)
                 {
                     bool allOnes = true;
 
-                    for (uint a = 1; a < n; a++)
+                    for (BigInteger a = 1; a < n; a++)
                     {
                         if (RsaMath.EuclidAlgorithm(a, n) != 1)
                             continue;
 
-                        ulong pow = (ulong)BigInteger.ModPow(a, e, n);
-                        if (pow != 1UL)
+                        BigInteger pow = BigInteger.ModPow(a, e, n);
+                        if (pow != 1)
                         {
                             allOnes = false;
                             break;
@@ -2027,8 +1983,7 @@ namespace Tests.TestsLab2Rsa
         [Test]
         public void LambdaOfCoprimeProduct_EqualsLcmOfLambdas()
         {
-            // Если gcd(m, n) = 1, то λ(m*n) = lcm(λ(m), λ(n))
-            var pairs = new (uint m, uint n)[]
+            var pairs = new (int m, int n)[]
             {
                 (3, 5),
                 (4, 9),
@@ -2041,16 +1996,16 @@ namespace Tests.TestsLab2Rsa
 
             foreach (var (m, n) in pairs)
             {
-                ulong lambdaM = RsaMath.CalcFunctionCarmichaelByFactorization(m);
-                ulong lambdaN = RsaMath.CalcFunctionCarmichaelByFactorization(n);
-                ulong lambdaMN = RsaMath.CalcFunctionCarmichaelByFactorization(m * n);
+                BigInteger lambdaM = RsaMath.CalcFunctionCarmichaelByFactorization(m);
+                BigInteger lambdaN = RsaMath.CalcFunctionCarmichaelByFactorization(n);
+                BigInteger lambdaMN = RsaMath.CalcFunctionCarmichaelByFactorization((BigInteger)m * n);
 
-                ulong expected = RsaMath.CalcLcm(lambdaM, lambdaN);
+                BigInteger expected = RsaMath.CalcLcm(lambdaM, lambdaN);
 
                 Assert.That(
                     lambdaMN,
                     Is.EqualTo(expected),
-                    $"λ({m}*{n}) = λ({m * n}) не равно lcm(λ({m}), λ({n}))"
+                    $"λ({m}*{n}) = λ({(BigInteger)m * n}) не равно lcm(λ({m}), λ({n}))"
                 );
             }
         }
@@ -2058,21 +2013,20 @@ namespace Tests.TestsLab2Rsa
         [Test]
         public void AlwaysPositive_ForAllSmallN()
         {
-            for (uint n = 1; n <= 2000; n++)
+            for (BigInteger n = 1; n <= 2000; n++)
             {
-                ulong lambda = RsaMath.CalcFunctionCarmichaelByFactorization(n);
-                Assert.That(lambda, Is.GreaterThan(0UL), $"λ({n}) = 0");
+                BigInteger lambda = RsaMath.CalcFunctionCarmichaelByFactorization(n);
+                Assert.That(lambda, Is.GreaterThan(BigInteger.Zero), $"λ({n}) = 0");
             }
         }
 
         [Test]
         public void NeverExceedsN_ForAllSmallN()
         {
-            // λ(n) ≤ φ(n) ≤ n - 1 для n > 1, и λ(1) = 1
-            for (uint n = 1; n <= 2000; n++)
+            for (BigInteger n = 1; n <= 2000; n++)
             {
-                ulong lambda = RsaMath.CalcFunctionCarmichaelByFactorization(n);
-                ulong phi = RsaMath.CalcFunctionEulerByFactorization(n);
+                BigInteger lambda = RsaMath.CalcFunctionCarmichaelByFactorization(n);
+                BigInteger phi = RsaMath.CalcFunctionEulerByFactorization(n);
 
                 Assert.That(
                     lambda,

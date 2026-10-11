@@ -1,65 +1,57 @@
-﻿namespace Core.Lab_2_RSA;
+﻿using System.Numerics;
+
+namespace Core.Lab_2_RSA;
 
 public static class Math
 {
-    public struct BezoutEquationCoefficients(long x, long y, uint gcd)
+    public struct BezoutEquationCoefficients(BigInteger x, BigInteger y, BigInteger gcd)
     {
-        public readonly long X = x;
-        public readonly long Y = y;
-        public readonly uint Gcd = gcd;
+        public readonly BigInteger X = x;
+        public readonly BigInteger Y = y;
+        public readonly BigInteger Gcd = gcd;
     }
 
-    public readonly struct NumberPower(uint number, uint power)
+    public readonly struct NumberPower(BigInteger number, BigInteger power)
     {
-        public readonly uint Number = number;
-        public readonly uint Power = power;
+        public readonly BigInteger Number = number;
+        public readonly BigInteger Power = power;
     }
 
-    public static ulong CalcFunctionCarmichaelByFactorization(uint number)
+    public static BigInteger CalcFunctionCarmichaelByFactorization(BigInteger number)
     {
         var factorization = CalcFactorization(number);
-        ulong result = 1u;
+        BigInteger result = 1;
         foreach (var numberPower in factorization)
         {
             if (numberPower.Number % 2 != 0)
             {
                 var step = FastBinaryPow(numberPower.Number, numberPower.Power - 1) * (numberPower.Number - 1);
                 result = CalcLcm(result, step);
-                continue;
             }
-
-            switch (numberPower.Power)
-            {
-                case 1:
-                    break;
-                case 2:
-                    result = CalcLcm(result, 2);
-                    break;
-                default:
-                    var step = FastBinaryPow(2, numberPower.Power - 2);
-                    result = CalcLcm(result, step);
-                    break;
-            }
+            else if (numberPower.Power == 2)
+                result = CalcLcm(result, 2);
+            else if (numberPower.Power >= 3)
+                result = CalcLcm(result, FastBinaryPow(2, numberPower.Power - 2));
         }
 
         return result;
     }
 
-    public static double CalcFunctionEulerByDpf(uint number)
+    public static BigInteger CalcFunctionEulerByDpf(BigInteger number)
     {
         double result = 0;
-        for (var k = 1u; k <= number; ++k)
+        for (BigInteger k = 1; k <= number; ++k)
         {
             var gcd = EuclidAlgorithm(number, k);
-            var angle = (2 * System.Math.PI * k) / number;
+            var angle = (2 * System.Math.PI * (double)k) / (double)number;
             var cos = System.Math.Cos(angle);
-            result += gcd * cos;
+            result += (double)gcd * cos;
         }
 
-        return result;
+        return new BigInteger(System.Math.Round(result));
     }
 
-    public static uint CalcFunctionEulerByFactorization(uint number)
+    public static BigInteger CalcFunctionEulerByFactorization(BigInteger number)
     {
         var factorization = CalcFactorization(number);
         var result = number;
@@ -72,19 +64,17 @@ public static class Math
         return result;
     }
 
-    public static uint CalcFunctionEulerSumUnit(uint a)
+    public static BigInteger CalcFunctionEulerSumUnit(BigInteger a)
     {
-        var result = 0u;
-        for (var i = 1u; i < a; ++i)
-        {
+        BigInteger result = 0;
+        for (var i = 1; i < a; ++i)
             if (EuclidAlgorithm(a, i) == 1)
                 result += 1;
-        }
 
         return result;
     }
 
-    public static uint BinaryEuclidAlgorithm(uint a, uint b)
+    public static BigInteger BinaryEuclidAlgorithm(BigInteger a, BigInteger b)
     {
         if (a == 0)
             return b;
@@ -116,7 +106,7 @@ public static class Math
         return a << count;
     }
 
-    public static BezoutEquationCoefficients ExtendedEuclidAlgorithm(uint a, uint b)
+    public static BezoutEquationCoefficients ExtendedEuclidAlgorithm(BigInteger a, BigInteger b)
     {
         if (b == 0)
             return new BezoutEquationCoefficients(1, 0, a);
@@ -127,33 +117,22 @@ public static class Math
         return new BezoutEquationCoefficients(x1, y1, coefficients.Gcd);
     }
 
-    public static uint EuclidAlgorithm(uint a, uint b)
+    public static BigInteger EuclidAlgorithm(BigInteger a, BigInteger b)
     {
-        if (b > a)
-            (a, b) = (b, a);
         while (a != 0 && b != 0)
             (a, b) = (b, a % b);
         return a + b;
     }
 
-    public static ulong EuclidAlgorithm(ulong a, ulong b)
+    public static BigInteger CalcJacobiSymbol(BigInteger a, BigInteger n)
     {
-        if (b > a)
-            (a, b) = (b, a);
-        while (a != 0 && b != 0)
-            (a, b) = (b, a % b);
-        return a + b;
-    }
-
-    public static int CalcJacobiSymbol(uint a, uint n)
-    {
-        var result = 1;
+        BigInteger result = 1;
         a %= n;
         while (a != 0)
         {
             while (a % 2 == 0)
             {
-                result *= n % 8 is 1 or 7 ? 1 : -1;
+                result *= n % 8 == 1 || n % 8 == 7 ? 1 : -1;
                 a /= 2;
             }
 
@@ -167,16 +146,16 @@ public static class Math
         return n == 1 ? result : 0;
     }
 
-    public static int CalcLegendreSymbol(uint a, uint p)
+    public static BigInteger CalcLegendreSymbol(BigInteger a, BigInteger p)
     {
         var result = FastBinaryPowModule(a, (p - 1) / 2, p);
         return result == p - 1 ? -1 : (int)result;
     }
 
-    public static uint FastBinaryPowModule(uint a, uint b, uint mod)
+    public static BigInteger FastBinaryPowModule(BigInteger a, BigInteger b, BigInteger mod)
     {
-        ulong accumulator = a;
-        ulong result = 1;
+        BigInteger accumulator = a;
+        BigInteger result = 1;
         while (b != 0)
         {
             if (b % 2 == 1)
@@ -185,13 +164,13 @@ public static class Math
             b >>= 1;
         }
 
-        return (uint)result % mod;
+        return result % mod;
     }
 
-    public static ulong FastBinaryPow(uint a, uint b)
+    public static BigInteger FastBinaryPow(BigInteger a, BigInteger b)
     {
-        ulong accumulator = a;
-        ulong result = 1;
+        BigInteger accumulator = a;
+        BigInteger result = 1;
         while (b != 0)
         {
             if (b % 2 == 1)
@@ -203,10 +182,10 @@ public static class Math
         return result;
     }
 
-    public static List<NumberPower> CalcFactorization(uint number)
+    public static List<NumberPower> CalcFactorization(BigInteger number)
     {
         var result = new List<NumberPower>();
-        for (var divisor = 2u; (ulong)divisor * divisor <= number; ++divisor)
+        for (var divisor = new BigInteger(2); divisor * divisor <= number; ++divisor)
         {
             uint count = 0;
             while (number % divisor == 0)
@@ -225,12 +204,7 @@ public static class Math
         return result;
     }
 
-    public static ulong CalcLcm(uint a, uint b)
-    {
-        return ((ulong)a * b) / EuclidAlgorithm(a, b);
-    }
-
-    public static ulong CalcLcm(ulong a, ulong b)
+    public static BigInteger CalcLcm(BigInteger a, BigInteger b)
     {
         return (a * b) / EuclidAlgorithm(a, b);
     }
