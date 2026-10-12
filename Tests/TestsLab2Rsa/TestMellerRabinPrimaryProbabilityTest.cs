@@ -50,7 +50,7 @@ namespace Tests.TestsLab2Rsa
                 for (int trial = 0; trial < 10; trial++)
                 {
                     Assert.That(
-                        _test.PrimaryProbabilityTest(n, 0.999),
+                        _test.PrimaryProbabilityTest(n, 0.99999),
                         Is.False,
                         $"Составное {n} вернуло true"
                     );
