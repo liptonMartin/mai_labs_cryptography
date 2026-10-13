@@ -5,7 +5,7 @@ namespace Core.Lab_2_RSA;
 public class Rsa
 {
     private KeyGenerator KeyGenerator;
-    private KeyGenerator.RsaKeys keys;
+    private RsaKeys keys;
 
     public Rsa(
         PrimaryTestType primaryTestType = PrimaryTestType.MellerRabin,

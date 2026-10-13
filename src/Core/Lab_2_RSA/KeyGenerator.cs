@@ -3,6 +3,18 @@ using System.Numerics;
 
 namespace Core.Lab_2_RSA;
 
+public struct Key(BigInteger exp, BigInteger n)
+{
+    public BigInteger Exp = exp;
+    public BigInteger N = n;
+}
+
+public struct RsaKeys(BigInteger e, BigInteger d, BigInteger n)
+{
+    public Key PublicKey = new(e, n);
+    public Key PrivateKey = new(d, n);
+}
+
 public class KeyGenerator(PrimaryTestType primaryTestType, double probability, uint bitLength)
 {
     public PrimaryTestType TestType { get; set; } = primaryTestType;
@@ -28,18 +40,6 @@ public class KeyGenerator(PrimaryTestType primaryTestType, double probability, u
             field = value;
         }
     } = bitLength;
-
-    public struct Key(BigInteger exp, BigInteger n)
-    {
-        public BigInteger Exp = exp;
-        public BigInteger N = n;
-    }
-
-    public struct RsaKeys(BigInteger e, BigInteger d, BigInteger n)
-    {
-        public Key PublicKey = new(e, n);
-        public Key PrivateKey = new(d, n);
-    }
 
     public RsaKeys GenerateKeys()
     {

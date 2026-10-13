@@ -8,9 +8,9 @@ public struct HackedRsa(BigInteger p, BigInteger q)
     public BigInteger Q = q;
 }
 
-public class WienersAttack(KeyGenerator.Key publicKey)
+public class WienersAttack(Key publicKey)
 {
-    public KeyGenerator.Key PublicKey { get; } = publicKey;
+    public Key PublicKey { get; } = publicKey;
 
     public HackedRsa Hack()
     {
