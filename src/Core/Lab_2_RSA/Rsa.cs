@@ -21,6 +21,20 @@ public class Rsa
         keys = KeyGenerator.GenerateKeys();
     }
 
+    public byte[] Encrypt(byte[] message)
+    {
+        var numberMessage = new BigInteger(message);
+        var numberCipher = Encrypt(numberMessage);
+        return numberCipher.ToByteArray();
+    }
+
+    public byte[] Decrypt(byte[] message)
+    {
+        var numberCipher = new BigInteger(message);
+        var numberMessage = Decrypt(numberCipher);
+        return numberMessage.ToByteArray();
+    }
+
     public BigInteger Encrypt(BigInteger message) =>
         Math.FastBinaryPowModule(message, keys.PublicKey.Exp, keys.PublicKey.N);
 

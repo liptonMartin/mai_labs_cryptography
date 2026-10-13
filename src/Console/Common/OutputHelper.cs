@@ -194,4 +194,58 @@ public static class OutputHelper
             " ",
             bytes.Select(b => b.ToString()));
     }
+
+    public static uint ReadUInt(
+        string prompt,
+        uint defaultValue)
+    {
+        while (true)
+        {
+            System.Console.WriteLine(
+                $"{prompt} [Enter = {defaultValue}]:");
+
+            System.Console.Write("> ");
+
+            var input = System.Console.ReadLine()?.Trim();
+
+            if (string.IsNullOrEmpty(input))
+                return defaultValue;
+
+            if (uint.TryParse(input, out var value))
+                return value;
+
+            System.Console.WriteLine(
+                "Invalid input. Enter a non-negative integer.");
+        }
+    }
+
+    public static double ReadDouble(
+        string prompt,
+        double defaultValue)
+    {
+        while (true)
+        {
+            System.Console.WriteLine(
+                $"{prompt} [Enter = {defaultValue}]:");
+
+            System.Console.Write("> ");
+
+            var input = System.Console.ReadLine()?.Trim();
+
+            if (string.IsNullOrEmpty(input))
+                return defaultValue;
+
+            if (double.TryParse(
+                    input,
+                    System.Globalization.NumberStyles.Float,
+                    System.Globalization.CultureInfo.InvariantCulture,
+                    out var value))
+            {
+                return value;
+            }
+
+            System.Console.WriteLine(
+                "Invalid input. Enter a number (e.g. 0.99999).");
+        }
+    }
 }

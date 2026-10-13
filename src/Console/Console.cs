@@ -1,4 +1,5 @@
 ﻿using Console.Lab_1;
+using Console.Lab2Rsa;
 
 namespace Console;
 
@@ -26,6 +27,13 @@ public static class Console
                 "DEAL_128 Encrypt/Decrypt file",
                 () => DealExamples.DealFiles()
             )
+        }),
+        ["2"] = ("Lab 2. Rsa", new Dictionary<string, LabAction>()
+        {
+            ["1"] = new LabAction(
+                "Rsa Encrypt/Decrypt",
+                () => RsaExamples.RsaMessage()
+            ),
         }),
     };
 
