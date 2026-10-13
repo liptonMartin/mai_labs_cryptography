@@ -208,4 +208,21 @@ public static class Math
     {
         return (a * b) / EuclidAlgorithm(a, b);
     }
+
+    public static BigInteger FloorSqrt(BigInteger a)
+    {
+        if (a == 0) return 0;
+
+        var bitLength = (int)a.GetBitLength();
+        BigInteger x = BigInteger.One << ((bitLength + 1) / 2);
+
+        while (true)
+        {
+            BigInteger y = (x + a / x) >> 1;
+            if (y >= x) break;
+            x = y;
+        }
+
+        return x;
+    }
 }
