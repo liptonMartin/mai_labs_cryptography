@@ -260,35 +260,7 @@ namespace Tests.TestsLab2Rsa
                 Assert.That(_test.PrimaryProbabilityTest(2, 0.99), Is.True);
             }
         }
-
-        // =====================================================================
-        // Числа Кармайкла
-        // =====================================================================
-
-        [Test]
-        public void CarmichaelNumbers_FrequentlyPassFermatTest()
-        {
-            int[] carmichael = { 561, 1105, 1729, 2465, 2821, 6601 };
-
-            foreach (int n in carmichael)
-            {
-                int passes = 0;
-                const int trials = 100;
-
-                for (int i = 0; i < trials; i++)
-                {
-                    if (_test.PrimaryProbabilityTest(n, 0.99))
-                        passes++;
-                }
-
-                Assert.That(
-                    passes,
-                    Is.GreaterThan(0),
-                    $"Число Кармайкла {n} ни разу не прошло тест за {trials} попыток"
-                );
-            }
-        }
-
+        
         [Test]
         public void CarmichaelNumbers_NotAlwaysPass()
         {

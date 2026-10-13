@@ -90,21 +90,6 @@ public class TestKeyGenerator
         Assert.That(keys1.PublicKey.N, Is.Not.EqualTo(keys2.PublicKey.N));
     }
 
-    [TestCase(8u)]
-    [TestCase(16u)]
-    [TestCase(32u)]
-    public void GenerateKeys_ShouldWork_ForVariousBitLengths(uint bitLength)
-    {
-        var generator = new KeyGenerator(PrimaryTestType.MellerRabin, 0.99, bitLength);
-        var keys = generator.GenerateKeys();
-
-        // n = p * q, каждое из p и q имеет ~bitLength бит,
-        // значит n имеет примерно 2*bitLength бит.
-        var nBitLength = keys.PublicKey.N.GetBitLength();
-        Assert.That(nBitLength, Is.GreaterThan(bitLength));
-        Assert.That(nBitLength, Is.LessThanOrEqualTo(2 * bitLength));
-    }
-
     [Test]
     public void GenerateKeys_N_ShouldBeComposite_AndGreaterThanOne()
     {

@@ -440,7 +440,7 @@ namespace Tests.TestsLab2Rsa
 
                 BigInteger left = RsaMath.CalcJacobiSymbol(a * b, n);
                 BigInteger right = RsaMath.CalcJacobiSymbol(a, n)
-                                  * RsaMath.CalcJacobiSymbol(b, n);
+                                   * RsaMath.CalcJacobiSymbol(b, n);
 
                 Assert.That(
                     left,
@@ -463,7 +463,7 @@ namespace Tests.TestsLab2Rsa
 
                 BigInteger left = RsaMath.CalcJacobiSymbol(a, m * n);
                 BigInteger right = RsaMath.CalcJacobiSymbol(a, m)
-                                  * RsaMath.CalcJacobiSymbol(a, n);
+                                   * RsaMath.CalcJacobiSymbol(a, n);
 
                 Assert.That(
                     left,
@@ -2034,6 +2034,30 @@ namespace Tests.TestsLab2Rsa
                     $"λ({n})={lambda} > φ({n})={phi}"
                 );
             }
+        }
+    }
+
+    [TestFixture]
+    public class BigIntegerSqrtTests
+    {
+        [Test]
+        public void BaseTestSquare()
+        {
+            var number = new BigInteger(9);
+            var sqrt = RsaMath.FloorSqrt(number);
+
+            var expected = new BigInteger(3);
+            Assert.That(sqrt, Is.EqualTo(expected));
+        }
+
+        [Test]
+        public void BaseTestNotSquare()
+        {
+            var number = new BigInteger(11);
+            var sqrt = RsaMath.FloorSqrt(number);
+
+            var expected = new BigInteger(3);
+            Assert.That(sqrt, Is.EqualTo(expected));
         }
     }
 }

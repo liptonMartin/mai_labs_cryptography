@@ -169,7 +169,7 @@ public static class Math
 
     public static BigInteger FastBinaryPow(BigInteger a, BigInteger b)
     {
-        BigInteger accumulator = a;
+        BigInteger accumulator = a >= 0 ? a : -a;
         BigInteger result = 1;
         while (b != 0)
         {
