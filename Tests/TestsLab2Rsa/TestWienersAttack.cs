@@ -10,8 +10,8 @@ public class TestWienersAttack
     public void BaseTest()
     {
         var attack = new WienersAttack(new(47318087, 60477719));
-        var N = attack.Hack();
-        var expected = new BigInteger(60477719);
-        Assert.That(N, Is.EqualTo(expected));
+        var hackedRsa = attack.Hack();
+        var expectedN = new BigInteger(60477719);
+        Assert.That(hackedRsa.P * hackedRsa.Q, Is.EqualTo(expectedN));
     }
 }

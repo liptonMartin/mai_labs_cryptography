@@ -2,11 +2,17 @@
 
 namespace Core.Lab_2_RSA;
 
+public struct HackedRsa(BigInteger p, BigInteger q)
+{
+    public BigInteger P = p;
+    public BigInteger Q = q;
+}
+
 public class WienersAttack(KeyGenerator.Key publicKey)
 {
     public KeyGenerator.Key PublicKey { get; } = publicKey;
 
-    public BigInteger Hack()
+    public HackedRsa Hack()
     {
         var continuedFraction = new ContinuedFraction(PublicKey.Exp, PublicKey.N);
         var convergentFractions = continuedFraction.GetConvergentFractions();
@@ -34,7 +40,7 @@ public class WienersAttack(KeyGenerator.Key publicKey)
                 var p = (b - floorSqrt) / 2;
                 var q = (b + floorSqrt) / 2;
 
-                return p * q;
+                return new HackedRsa(p, q);
             }
         }
 
