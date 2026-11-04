@@ -26,17 +26,6 @@ public class GaloisField {
         return remainder(result, defaultMod);
     }
 
-    private static int remainder(long a, int mod) {
-        for (int i = 15; i >= 8; --i) {
-            if (((a >> i) & 1) == 0)
-                continue;
-
-            a ^= (long) mod << (i - 8);
-        }
-
-        return (int) a;
-    }
-
     public static int inverseElement(int a) {
         return inverseElementMod(a, defaultMod);
     }
@@ -50,45 +39,41 @@ public class GaloisField {
     }
 
     public static boolean isIrreduciblePolynomial(int a) {
-        var irreduciblePolynomials = generateIrreduciblePolynomials();
+        if (a == 2 || a == 3)
+            return true;
 
-        var maxPolynomialDegree = 0;
-        for (int i = 8; i >= 0; --i)
-            if (((a >> i) & 1) == 1) {
-                maxPolynomialDegree = i;
-                break;
-            }
+        if (remainder(a, 2) == 0)
+            return false;
 
-        for (int i = 0; i < 4; ++i) {
-            for (int j = i; i + j <= maxPolynomialDegree; ++j) {
-                var listI = irreduciblePolynomials.get(i);
-                var listJ = irreduciblePolynomials.get(j);
-
-                for (var numberI : listI) {
-                    for (var numberJ : listJ) {
-                        var multiplyResult = multiply(numberI, numberJ);
-                        if (multiplyResult == a && (numberI != 1 || numberJ == 1))
-                            return false;
-                    }
-                }
-            }
+        var bitLength = getBitLength(a);
+        var halfBitLength = bitLength / 2 + bitLength % 2;
+        for (int divisor = 3; divisor <= (1 << halfBitLength); divisor += 2) {
+            if (remainder(a, divisor) == 0)
+                return false;
         }
         return true;
     }
 
-    private static Map<Integer, List<Integer>> generateIrreduciblePolynomials() {
-        Map<Integer, List<Integer>> result = new HashMap<>();
+    private static int remainder(long dividend, int divisor) {
+        var bitLengthDividend = getBitLength(dividend);
+        var bitLengthDivisor = getBitLength(divisor);
+        for (int i = bitLengthDividend - 1; i >= bitLengthDivisor - 1; --i) {
+            if (((dividend >> i) & 1) == 0)
+                continue;
 
-        for (int i = 0; i < 8; ++i) {
-            var countNumbers = 1 << (i + 1);
-            var numbers = new ArrayList<Integer>(countNumbers);
-            for (int j = i + 1; j < countNumbers; ++j) {
-                numbers.add(j);
-            }
-            result.put(i, numbers);
+            dividend ^= (long) divisor << (i - bitLengthDivisor + 1);
         }
 
-        return result;
+        return (int) dividend;
+    }
+
+    private static int getBitLength(long a) {
+        var bitLength = 0;
+        while (a > 0) {
+            ++bitLength;
+            a >>= 1;
+        }
+        return bitLength;
     }
 }
 
