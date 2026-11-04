@@ -3,9 +3,6 @@ package aes;
 import common.Helper;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 public class GaloisField {
     static int defaultMod = 283;
@@ -65,6 +62,15 @@ public class GaloisField {
         }
 
         return (int) dividend;
+    }
+
+    public static ArrayList<Integer> generateAllIrreduciblePolynomials8Degree() {
+        var result = new ArrayList<Integer>();
+        for (int i = (1 << 8); i < (1 << 9); ++i)
+            if (isIrreduciblePolynomial(i))
+                result.add(i);
+
+        return result;
     }
 
     private static int getBitLength(long a) {
