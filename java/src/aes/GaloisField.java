@@ -51,6 +51,54 @@ public class GaloisField {
         return true;
     }
 
+    public static ArrayList<Integer> generateAllIrreduciblePolynomials8Degree() {
+        var result = new ArrayList<Integer>();
+        for (int i = (1 << 8); i < (1 << 9); ++i)
+            if (isIrreduciblePolynomial(i))
+                result.add(i);
+
+        return result;
+    }
+
+    public static ArrayList<Integer> decomposePolynomialToIrreducible(int a, int n) {
+        var divisor = 3;
+        var result = new ArrayList<Integer>();
+
+        while (remainder(a, 2) == 0) {
+            a = divide(a, 2);
+            result.add(2);
+        }
+
+        while (divisor <= a && divisor < (1 << n)) {
+            if (isIrreduciblePolynomial(divisor)) {
+                while (remainder(a, divisor) == 0) {
+                    result.add(divisor);
+                    a = divide(a, divisor);
+                }
+            }
+            divisor += 2;
+        }
+
+        if (a != 1 && a != 0)
+            result.add(a);
+
+        return result;
+    }
+
+    private static int divide(long dividend, int divisor) {
+        var bitLengthDividend = getBitLength(dividend);
+        var bitLengthDivisor = getBitLength(divisor);
+        var result = 0;
+        for (int i = bitLengthDividend - 1; i >= bitLengthDivisor - 1; --i) {
+            if (((dividend >> i) & 1) == 0)
+                continue;
+
+            dividend ^= (long) divisor << (i - bitLengthDivisor + 1);
+            result |= (1 << (i - bitLengthDivisor + 1));
+        }
+        return result;
+    }
+
     private static int remainder(long dividend, int divisor) {
         var bitLengthDividend = getBitLength(dividend);
         var bitLengthDivisor = getBitLength(divisor);
@@ -62,15 +110,6 @@ public class GaloisField {
         }
 
         return (int) dividend;
-    }
-
-    public static ArrayList<Integer> generateAllIrreduciblePolynomials8Degree() {
-        var result = new ArrayList<Integer>();
-        for (int i = (1 << 8); i < (1 << 9); ++i)
-            if (isIrreduciblePolynomial(i))
-                result.add(i);
-
-        return result;
     }
 
     private static int getBitLength(long a) {

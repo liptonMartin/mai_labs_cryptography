@@ -5,6 +5,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
+import java.util.ArrayList;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class GaloisFieldTest {
@@ -406,5 +408,64 @@ public class GaloisFieldTest {
         var result = GaloisField.generateAllIrreduciblePolynomials8Degree();
 
         assertEquals(30, result.size());
+    }
+
+    @ParameterizedTest(name = "{0} decomposition in 2^{1} = {2}")
+    @CsvSource({
+            "283, 8, '283'",
+            "3, 8, '3'",
+            "7, 8, '7'",
+            "11, 8, '11'",
+            "13, 8, '13'",
+
+            "9, 8, '3, 7'",
+            "127, 8, '11, 13'",
+            "443, 8, '19, 25'",
+
+            "4, 8, '2, 2'",
+            "5, 8, '3, 3'",
+            "15, 8, '3, 3, 3'",
+            "21, 8, '7, 7'",
+            "207, 8, '3, 11, 11'",
+
+            "18, 8, '2, 3, 7'",
+            "381, 8, '7, 11, 13'",
+
+            "3, 2, '3'",
+            "7, 3, '7'",
+            "11, 4, '11'",
+
+            "5, 1, '5'",
+            "5, 2, '3, 3'",
+
+            "9, 1, '9'",
+            "9, 2, '3, 7'",
+            "9, 3, '3, 7'",
+
+            "21, 2, '21'",
+            "21, 3, '7, 7'",
+
+            "69, 3, '69'",
+            "69, 4, '11, 11'",
+
+            "59, 2, '59'",
+
+            "2, 1, '2'",
+            "6, 2, '2, 3'",
+            "10, 1, '2, 5'",
+            "10, 2, '2, 3, 3'",
+
+            "18, 3, '2, 3, 7'",
+    })
+    @DisplayName("Test decompose polynomial to irreducible")
+    void decomposePolynomialToIrreducibleTest(  int a, int n, String expectedStr) {
+        ArrayList<Integer> expected = new ArrayList<>();
+        for (String s : expectedStr.split(",")) {
+            expected.add(Integer.parseInt(s.trim()));
+        }
+
+        var result = GaloisField.decomposePolynomialToIrreducible(a, n);
+
+        assertEquals(expected, result);
     }
 }
