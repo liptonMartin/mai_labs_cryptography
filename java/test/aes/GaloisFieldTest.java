@@ -5,467 +5,260 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class GaloisFieldTest {
 
-    @ParameterizedTest(name = "{0}+{1} = {2}")
-    @CsvSource({
-            "0,   0,   0",
-            "1,   0,   1",
-            "179,   0, 179",
-            "  0, 179, 179",
-            "255,   0, 255",
-            "  0, 255, 255",
-            "128, 128,   0",
-            "127, 128, 255",
-            "128, 127, 255",
-            "200, 100, 172",
-            "255,   2, 253",
-            "179, 10, 185",
-    })
-    @DisplayName("Base add two numbers in GaloisField")
-    void baseAddTest(int a, int b, int expected) {
-        assertEquals(expected, GaloisField.add(a, b));
+    private final GaloisField gf = new GaloisField();
+
+    // Все 30 неприводимых полиномов степени 8, вместе со старшим битом x^8
+    private static final Set<Integer> IRREDUCIBLE_8 = Set.of(
+            0b1_0001_1011, 0b1_0001_1101, 0b1_0010_1011, 0b1_0010_1101, 0b1_0011_1001,
+            0b1_0011_1111, 0b1_0100_1101, 0b1_0101_1111, 0b1_0110_0011, 0b1_0110_0101,
+            0b1_0110_1001, 0b1_0111_0001, 0b1_0111_0111, 0b1_0111_1011, 0b1_1000_0111,
+            0b1_1000_1011, 0b1_1000_1101, 0b1_1001_1111, 0b1_1010_0011, 0b1_1010_1001,
+            0b1_1011_0001, 0b1_1011_1101, 0b1_1100_0011, 0b1_1100_1111, 0b1_1101_0111,
+            0b1_1101_1101, 0b1_1110_0111, 0b1_1111_0011, 0b1_1111_0101, 0b1_1111_1001);
+
+    // "1000_0000" -> (byte) 0b1000_0000, то есть -128 (в CSV значения ≥ 0b1000_0000 иначе не записать)
+    private static byte b(String bits) {
+        return (byte) Integer.parseInt(bits.replace("_", "").trim(), 2);
     }
 
-    @ParameterizedTest(name = "{0}*{1} = {2}")
-    @CsvSource({
-            "179, 10, 146",
-            "2,  179, 125",
-            "128,  2,  27",
-            "3,  179, 206",
-            "255, 255,  19",
-            "83,  202,   1",
-            "202,  83,   1",
-            "1, 255, 255",
-            "283, 0, 0",
-    })
-    @DisplayName("Base multiply two numbers in GaloisField")
-    void baseMultiplyTest(int a, int b, int expected) {
-        assertEquals(expected, GaloisField.multiply(a, b));
+    private static BigInteger poly(String bits) {
+        return new BigInteger(bits.replace("_", "").trim(), 2);
     }
 
-    @ParameterizedTest(name = "Is {0} irreducible? {1}")
+    private static List<BigInteger> polys(String csv) {
+        List<BigInteger> result = new ArrayList<>();
+        for (String s : csv.split(","))
+            result.add(poly(s));
+        return result;
+    }
+
+    @ParameterizedTest(name = "{0} + {1} = {2}")
     @CsvSource({
-            "2, true",
-            "3, true",
-
-            "4, false",
-            "5, false",
-            "6, false",
-            "7, true",
-
-            "8, false",
-            "9, false",
-            "10, false",
-            "11, true",
-            "12, false",
-            "13, true",
-            "14, false",
-            "15, false",
-
-            "16, false",
-            "17, false",
-            "18, false",
-            "19, true",
-            "21, false",
-            "23, false",
-            "25, true",
-            "27, false",
-            "29, false",
-            "31, true",
-
-            "35, false",
-            "37, true",
-            "41, true",
-            "47, true",
-            "49, false",
-            "55, true",
-            "59, true",
-            "61, true",
-            "63, false",
-
-            "67, true",
-            "69, false",
-            "73, true",
-            "79, false",
-            "87, true",
-            "91, true",
-            "93, false",
-            "97, true",
-            "103, true",
-            "107, false",
-            "109, true",
-            "115, true",
-            "117, true",
-            "121, false",
-            "127, false",
-
-            "129, false",
-            "131, true",
-            "133, false",
-            "137, true",
-            "143, true",
-            "145, true",
-            "151, false",
-            "155, false",
-            "157, true",
-            "161, false",
-            "167, true",
-            "171, true",
-            "173, false",
-            "179, false",
-            "181, false",
-            "185, true",
-            "191, true",
-            "193, true",
-            "199, false",
-            "203, true",
-            "205, false",
-            "211, true",
-            "213, true",
-            "217, false",
-            "221, false",
-            "223, false",
-            "227, false",
-            "229, true",
-            "233, false",
-            "239, true",
-            "241, true",
-            "247, true",
-            "251, false",
-            "253, true",
-            "255, false",
-
-            "256, false",
-            "257, false",
-            "258, false",
-            "259, false",
-            "260, false",
-            "261, false",
-            "262, false",
-            "263, false",
-            "264, false",
-            "265, false",
-            "266, false",
-            "267, false",
-            "268, false",
-            "269, false",
-            "270, false",
-            "271, false",
-            "272, false",
-            "273, false",
-            "274, false",
-            "275, false",
-            "276, false",
-            "277, false",
-            "278, false",
-            "279, false",
-            "280, false",
-            "281, false",
-            "282, false",
-            "283, true",
-            "284, false",
-            "285, true",
-            "286, false",
-            "287, false",
-            "288, false",
-            "289, false",
-            "290, false",
-            "291, false",
-            "292, false",
-            "293, false",
-            "294, false",
-            "295, false",
-            "296, false",
-            "297, false",
-            "298, false",
-            "299, true",
-            "300, false",
-            "301, true",
-            "302, false",
-            "303, false",
-            "304, false",
-            "305, false",
-            "306, false",
-            "307, false",
-            "308, false",
-            "309, false",
-            "310, false",
-            "311, false",
-            "312, false",
-            "313, true",
-            "314, false",
-            "315, false",
-            "316, false",
-            "317, false",
-            "318, false",
-            "319, true",
-            "320, false",
-            "321, false",
-            "322, false",
-            "323, false",
-            "324, false",
-            "325, false",
-            "326, false",
-            "327, false",
-            "328, false",
-            "329, false",
-            "330, false",
-            "331, false",
-            "332, false",
-            "333, true",
-            "334, false",
-            "335, false",
-            "336, false",
-            "337, false",
-            "338, false",
-            "339, false",
-            "340, false",
-            "341, false",
-            "342, false",
-            "343, false",
-            "344, false",
-            "345, false",
-            "346, false",
-            "347, false",
-            "348, false",
-            "349, false",
-            "350, false",
-            "351, true",
-            "352, false",
-            "353, false",
-            "354, false",
-            "355, true",
-            "356, false",
-            "357, true",
-            "358, false",
-            "359, false",
-            "360, false",
-            "361, true",
-            "362, false",
-            "363, false",
-            "364, false",
-            "365, false",
-            "366, false",
-            "367, false",
-            "368, false",
-            "369, true",
-            "370, false",
-            "371, false",
-            "372, false",
-            "373, false",
-            "374, false",
-            "375, true",
-            "376, false",
-            "377, false",
-            "378, false",
-            "379, true",
-            "380, false",
-            "381, false",
-            "382, false",
-            "383, false",
-            "384, false",
-            "385, false",
-            "386, false",
-            "387, false",
-            "388, false",
-            "389, false",
-            "390, false",
-            "391, true",
-            "392, false",
-            "393, false",
-            "394, false",
-            "395, true",
-            "396, false",
-            "397, true",
-            "398, false",
-            "399, false",
-            "400, false",
-            "401, false",
-            "402, false",
-            "403, false",
-            "404, false",
-            "405, false",
-            "406, false",
-            "407, false",
-            "408, false",
-            "409, false",
-            "410, false",
-            "411, false",
-            "412, false",
-            "413, false",
-            "414, false",
-            "415, true",
-            "416, false",
-            "417, false",
-            "418, false",
-            "419, true",
-            "420, false",
-            "421, false",
-            "422, false",
-            "423, false",
-            "424, false",
-            "425, true",
-            "426, false",
-            "427, false",
-            "428, false",
-            "429, false",
-            "430, false",
-            "431, false",
-            "432, false",
-            "433, true",
-            "434, false",
-            "435, false",
-            "436, false",
-            "437, false",
-            "438, false",
-            "439, false",
-            "440, false",
-            "441, false",
-            "442, false",
-            "443, false",
-            "444, false",
-            "445, true",
-            "446, false",
-            "447, false",
-            "448, false",
-            "449, false",
-            "450, false",
-            "451, true",
-            "452, false",
-            "453, false",
-            "454, false",
-            "455, false",
-            "456, false",
-            "457, false",
-            "458, false",
-            "459, false",
-            "460, false",
-            "461, false",
-            "462, false",
-            "463, true",
-            "464, false",
-            "465, false",
-            "466, false",
-            "467, false",
-            "468, false",
-            "469, false",
-            "470, false",
-            "471, true",
-            "472, false",
-            "473, false",
-            "474, false",
-            "475, false",
-            "476, false",
-            "477, true",
-            "478, false",
-            "479, false",
-            "480, false",
-            "481, false",
-            "482, false",
-            "483, false",
-            "484, false",
-            "485, false",
-            "486, false",
-            "487, true",
-            "488, false",
-            "489, false",
-            "490, false",
-            "491, false",
-            "492, false",
-            "493, false",
-            "494, false",
-            "495, false",
-            "496, false",
-            "497, false",
-            "498, false",
-            "499, true",
-            "500, false",
-            "501, true",
-            "502, false",
-            "503, false",
-            "504, false",
-            "505, true",
-            "506, false",
-            "507, false",
-            "508, false",
-            "509, false",
-            "510, false",
-            "511, false",
+            "0000_0000, 0000_0000, 0000_0000",
+            "0000_0001, 0000_0000, 0000_0001",
+            "1011_0011, 0000_0000, 1011_0011",
+            "0000_0000, 1011_0011, 1011_0011",
+            "1111_1111, 0000_0000, 1111_1111",
+            "1000_0000, 1000_0000, 0000_0000",
+            "0111_1111, 1000_0000, 1111_1111",
+            "1000_0000, 0111_1111, 1111_1111",
+            "1100_1000, 0110_0100, 1010_1100",
+            "1111_1111, 0000_0010, 1111_1101",
+            "1011_0011, 0000_1010, 1011_1001",
     })
-    @DisplayName("Base check is irreducible polynomial")
-    void baseCheckIsIrreduciblePolynomialTest(int a, boolean expected) {
-        assertEquals(expected, GaloisField.isIrreduciblePolynomial(a));
+    @DisplayName("add is XOR")
+    void addTest(String a, String bb, String expected) {
+        assertEquals(b(expected), gf.add(b(a), b(bb)));
+    }
+
+    @ParameterizedTest(name = "{0} * {1} = {2}")
+    @CsvSource({
+            "1011_0011, 0000_1010, 1001_0010",
+            "0000_0010, 1011_0011, 0111_1101",
+            "1000_0000, 0000_0010, 0001_1011",   // x^7 * x = x^8 = x^4+x^3+x+1
+            "0000_0011, 1011_0011, 1100_1110",
+            "1111_1111, 1111_1111, 0001_0011",
+            "0101_0011, 1100_1010, 0000_0001",   // {53} * {CA} = 1
+            "1100_1010, 0101_0011, 0000_0001",
+            "0000_0001, 1111_1111, 1111_1111",
+            "0000_0000, 1111_1111, 0000_0000",
+            "1111_1111, 0000_0000, 0000_0000",
+            "0101_0111, 1000_0011, 1100_0001",   // пример из FIPS-197: {57} * {83} = {C1}
+    })
+    @DisplayName("multiply with default (AES) modulus")
+    void multiplyDefaultModTest(String a, String bb, String expected) {
+        assertEquals(b(expected), gf.multiply(b(a), b(bb)));
+    }
+
+    @ParameterizedTest(name = "{0} * {1} mod x^8+{3} = {2}")
+    @CsvSource({
+            "1000_0000, 0000_0010, 0001_1011, 0001_1011",
+            "1000_0000, 0000_0010, 0001_1101, 0001_1101",   // x^8 = x^4+x^3+x^2+1
+            "0101_0111, 1000_0011, 1100_0001, 0001_1011",
+            "0000_0001, 1111_1111, 1111_1111, 0001_1101",
+    })
+    @DisplayName("multiply with explicit modulus")
+    void multiplyExplicitModTest(String a, String bb, String expected, String mod) {
+        assertEquals(b(expected), gf.multiply(b(a), b(bb), b(mod)));
     }
 
     @Test
-    @DisplayName("Test generate all irreducible polynomials 8 degree")
-    void generateAllIrreduciblePolynomials8DegreeTest() {
-        var result = GaloisField.generateAllIrreduciblePolynomials8Degree();
-
-        assertEquals(30, result.size());
+    @DisplayName("multiply is commutative for every irreducible modulus")
+    void multiplyCommutativeTest() {
+        for (int m : IRREDUCIBLE_8) {
+            byte mod = (byte) m;
+            for (int x = 0; x < 256; x += 5)
+                for (int y = 0; y < 256; y += 7)
+                    assertEquals(gf.multiply((byte) x, (byte) y, mod), gf.multiply((byte) y, (byte) x, mod));
+        }
     }
 
-    @ParameterizedTest(name = "{0} decomposition in 2^{1} = {2}")
+    @ParameterizedTest(name = "reducible modulus x^8+{0} throws")
     @CsvSource({
-            "283, 8, '283'",
-            "3, 8, '3'",
-            "7, 8, '7'",
-            "11, 8, '11'",
-            "13, 8, '13'",
-
-            "9, 8, '3, 7'",
-            "127, 8, '11, 13'",
-            "443, 8, '19, 25'",
-
-            "4, 8, '2, 2'",
-            "5, 8, '3, 3'",
-            "15, 8, '3, 3, 3'",
-            "21, 8, '7, 7'",
-            "207, 8, '3, 11, 11'",
-
-            "18, 8, '2, 3, 7'",
-            "381, 8, '7, 11, 13'",
-
-            "3, 2, '3'",
-            "7, 3, '7'",
-            "11, 4, '11'",
-
-            "5, 1, '5'",
-            "5, 2, '3, 3'",
-
-            "9, 1, '9'",
-            "9, 2, '3, 7'",
-            "9, 3, '3, 7'",
-
-            "21, 2, '21'",
-            "21, 3, '7, 7'",
-
-            "69, 3, '69'",
-            "69, 4, '11, 11'",
-
-            "59, 2, '59'",
-
-            "2, 1, '2'",
-            "6, 2, '2, 3'",
-            "10, 1, '2, 5'",
-            "10, 2, '2, 3, 3'",
-
-            "18, 3, '2, 3, 7'",
+            "0000_0000",
+            "0000_0001",   // x^8+1 = (x+1)^8
+            "0000_0011",   // делится на x^2+x+1
+            "0001_1010",   // свободный член 0, делится на x
+            "1111_1111",
     })
-    @DisplayName("Test decompose polynomial to irreducible")
-    void decomposePolynomialToIrreducibleTest(  int a, int n, String expectedStr) {
-        ArrayList<Integer> expected = new ArrayList<>();
-        for (String s : expectedStr.split(",")) {
-            expected.add(Integer.parseInt(s.trim()));
+    @DisplayName("reducible modulus throws in multiply and inverseElement")
+    void reducibleModThrowsTest(String modBits) {
+        byte mod = b(modBits);
+        assertThrows(IllegalArgumentException.class, () -> gf.multiply((byte) 2, (byte) 3, mod));
+        assertThrows(IllegalArgumentException.class, () -> gf.inverseElement((byte) 3, mod));
+    }
+
+    @ParameterizedTest(name = "inv({0}) = {1}")
+    @CsvSource({
+            "0000_0001, 0000_0001",
+            "0101_0011, 1100_1010",   // {53}^-1 = {CA}
+            "1100_1010, 0101_0011",
+            "0000_0010, 1000_1101",
+    })
+    @DisplayName("inverseElement with default modulus")
+    void inverseKnownValuesTest(String a, String expected) {
+        assertEquals(b(expected), gf.inverseElement(b(a)));
+    }
+
+    @Test
+    @DisplayName("a * inv(a) == 1 for every nonzero a and every irreducible modulus")
+    void inverseProductIsOneTest() {
+        for (int m : IRREDUCIBLE_8) {
+            byte mod = (byte) m;
+            for (int a = 1; a < 256; a++) {
+                byte inv = gf.inverseElement((byte) a, mod);
+                assertEquals(0b0000_0001, gf.multiply((byte) a, inv, mod),
+                        "a=" + a + ", mod=" + m);
+            }
         }
+    }
 
-        var result = GaloisField.decomposePolynomialToIrreducible(a, n);
+    @Test
+    @DisplayName("inverseElement(0) throws")
+    void inverseOfZeroThrowsTest() {
+        assertThrows(IllegalArgumentException.class, () -> gf.inverseElement((byte) 0));
+    }
 
+    // ---------- irreducibility of degree 8 ----------
+
+    @Test
+    @DisplayName("isIrreduciblePolynomial8Degree matches the reference list for all 256 values")
+    void isIrreducible8DegreeAllTest() {
+        for (int low = 0; low < 256; low++) {
+            boolean expected = IRREDUCIBLE_8.contains(0b1_0000_0000 | low);
+            assertEquals(expected, gf.isIrreduciblePolynomial8Degree((byte) low),
+                    "x^8 + 0b" + Integer.toBinaryString(low));
+        }
+    }
+
+    @ParameterizedTest(name = "x^8+{0} irreducible = {1}")
+    @CsvSource({
+            "0001_1011, true",
+            "0001_1101, true",
+            "1111_1001, true",
+            "0000_0011, false",   // x^8+x+1 делится на x^2+x+1
+            "0000_0010, false",
+            "0001_1010, false",
+            "0000_0001, false",
+            "1000_0000, false",
+            "1111_1111, false",
+    })
+    @DisplayName("isIrreduciblePolynomial8Degree on selected values")
+    void isIrreducible8DegreeSelectedTest(String modBits, boolean expected) {
+        assertEquals(expected, gf.isIrreduciblePolynomial8Degree(b(modBits)));
+    }
+
+    @Test
+    @DisplayName("generateAllIrreduciblePolynomials8Degree returns exactly 30, ascending")
+    void generateAllTest() {
+        List<Byte> result = gf.generateAllIrreduciblePolynomials8Degree();
+
+        List<Byte> expected = new ArrayList<>();
+        IRREDUCIBLE_8.stream().sorted().forEach(p -> expected.add((byte) (int) p));   // старший бит x^8 отбрасывается
+
+        assertEquals(30, result.size());
         assertEquals(expected, result);
+    }
+
+    // ---------- decomposition ----------
+
+    @ParameterizedTest(name = "{0} in GF(2^{1}) = {2}")
+    @CsvSource({
+            "11, 8, '11'",
+            "111, 8, '111'",
+            "1011, 8, '1011'",
+            "1101, 8, '1101'",
+
+            "1001, 8, '11, 111'",
+            "111_1111, 8, '1011, 1101'",
+            "1_1011_1011, 8, '1_0011, 1_1001'",
+
+            "100, 8, '10, 10'",
+            "101, 8, '11, 11'",
+            "1111, 8, '11, 11, 11'",
+            "1_0101, 8, '111, 111'",
+            "1100_1111, 8, '11, 1011, 1011'",
+
+            "1_0010, 8, '10, 11, 111'",
+            "1_0111_1101, 8, '111, 1011, 1101'",
+
+            "11, 2, '11'",
+            "111, 3, '111'",
+            "1011, 4, '1011'",
+
+            "101, 2, '11, 11'",
+            "1001, 3, '11, 111'",
+            "1_0101, 3, '111, 111'",
+            "100_0101, 4, '1011, 1011'",
+
+            "110, 2, '10, 11'",
+            "1010, 2, '10, 11, 11'",
+            "1_0010, 3, '10, 11, 111'",
+    })
+    @DisplayName("decompose into irreducible factors")
+    void decomposeTest(String a, int n, String expected) {
+        assertEquals(polys(expected), gf.decomposePolynomialToIrreducible(poly(a), n));
+    }
+
+    @ParameterizedTest(name = "{0} is not decomposable in GF(2^{1})")
+    @CsvSource({
+            "1_0001_1011, 8",   // сам неприводим и имеет степень 8
+            "101, 1",
+            "1001, 1",
+            "1001, 2",          // 111 имеет степень 2
+            "1_0101, 2",
+            "100_0101, 3",      // 1011 имеет степень 3
+            "11_1011, 2",
+            "10, 1",
+            "1010, 1",
+    })
+    @DisplayName("decompose throws when a factor is not an element of GF(2^n)")
+    void decomposeNotInFieldThrowsTest(String a, int n) {
+        assertThrows(IllegalArgumentException.class,
+                () -> gf.decomposePolynomialToIrreducible(poly(a), n));
+    }
+
+    @Test
+    @DisplayName("decompose(0) throws")
+    void decomposeZeroThrowsTest() {
+        assertThrows(IllegalArgumentException.class,
+                () -> gf.decomposePolynomialToIrreducible(BigInteger.ZERO, 8));
+    }
+
+    @Test
+    @DisplayName("decompose(1) is an empty product")
+    void decomposeOneTest() {
+        assertTrue(gf.decomposePolynomialToIrreducible(BigInteger.ONE, 8).isEmpty());
     }
 }
