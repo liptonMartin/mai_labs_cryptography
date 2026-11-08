@@ -144,12 +144,6 @@ public class GaloisFieldTest {
         }
     }
 
-    @Test
-    @DisplayName("inverseElement(0) throws")
-    void inverseOfZeroThrowsTest() {
-        assertThrows(IllegalArgumentException.class, () -> gf.inverseElement((byte) 0));
-    }
-
     // ---------- irreducibility of degree 8 ----------
 
     @Test

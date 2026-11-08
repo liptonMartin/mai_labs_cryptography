@@ -58,8 +58,6 @@ public final class GaloisField {
                     )
             );
 
-        if (a == 0)
-            throw new IllegalArgumentException("The number 0 is not irreducibly in GF(2^8)");
         return binaryPow(a, (byte) 254, mod);
     }
 
