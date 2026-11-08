@@ -53,6 +53,19 @@ public class Rijndael implements SymmetricalAlgorithm {
         return subBytes(state, true);
     }
 
+    private byte[][] addRoundKey(byte[][] state, byte[][] roundKey) {
+        int n = state.length;
+        int m = state[0].length;
+
+        for (int i = 0; i < n; ++i) {
+            for (int j = 0; j < m; ++j) {
+                state[i][j] ^= roundKey[i][j];
+            }
+        }
+
+        return state;
+    }
+
     private byte[][] shiftRows(byte[][] state) {
         int n = 4;
         var countShifts = this.shifts.get(this.blockSize);

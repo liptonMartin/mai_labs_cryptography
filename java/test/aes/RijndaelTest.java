@@ -96,6 +96,20 @@ public class RijndaelTest {
         };
     }
 
+    private static byte[][] invokeAddRoundKey(
+            Rijndael rijndael,
+            byte[][] state,
+            byte[][] roundKey
+    ) throws Exception {
+        Method method = Rijndael.class.getDeclaredMethod(
+                "addRoundKey",
+                byte[][].class,
+                byte[][].class
+        );
+        method.setAccessible(true);
+        return (byte[][]) method.invoke(rijndael, state, roundKey);
+    }
+
     // ------------------------------------------------------------------
     // S-box / inverse S-box
     // ------------------------------------------------------------------
@@ -329,6 +343,139 @@ public class RijndaelTest {
         byte[][] actual = invokeState(algorithm, "shiftRows", copy(input));
 
         assertArrayEquals(expected, actual);
+    }
+
+    // ------------------------------------------------------------------
+// addRoundKey
+// ------------------------------------------------------------------
+
+    @Test
+    @DisplayName("addRoundKey XORs state with round key")
+    void addRoundKeyTest() throws Exception {
+        byte[][] state = {
+                row(0x19, 0xA0, 0x9A, 0xE9),
+                row(0x3D, 0xF4, 0xC6, 0xF8),
+                row(0xE3, 0xE2, 0x8D, 0x48),
+                row(0xBE, 0x2B, 0x2A, 0x08)
+        };
+
+        byte[][] roundKey = {
+                row(0xA0, 0xFA, 0xFE, 0x17),
+                row(0x88, 0x54, 0x2C, 0xB1),
+                row(0x23, 0xA3, 0x39, 0x39),
+                row(0x2A, 0x6C, 0x76, 0x05)
+        };
+
+        byte[][] expected = {
+                row(0xB9, 0x5A, 0x64, 0xFE),
+                row(0xB5, 0xA0, 0xEA, 0x49),
+                row(0xC0, 0x41, 0xB4, 0x71),
+                row(0x94, 0x47, 0x5C, 0x0D)
+        };
+
+        byte[][] actual = invokeAddRoundKey(rijndael, copy(state), roundKey);
+
+        assertArrayEquals(expected, actual);
+    }
+
+    @Test
+    @DisplayName("addRoundKey with zero round key does not change state")
+    void addRoundKeyZeroKeyTest() throws Exception {
+        byte[][] state = {
+                row(0x19, 0x3D, 0xE3, 0xBE),
+                row(0xA0, 0xF4, 0xE2, 0x2B),
+                row(0x9A, 0xC6, 0x8D, 0x2A),
+                row(0xE9, 0xF8, 0x48, 0x08)
+        };
+
+        byte[][] roundKey = new byte[4][4];
+
+        byte[][] actual = invokeAddRoundKey(rijndael, copy(state), roundKey);
+
+        assertArrayEquals(state, actual);
+    }
+
+    @Test
+    @DisplayName("addRoundKey with identical state and round key produces zero state")
+    void addRoundKeyIdenticalMatricesTest() throws Exception {
+        byte[][] state = {
+                row(0x19, 0x3D, 0xE3, 0xBE),
+                row(0xA0, 0xF4, 0xE2, 0x2B),
+                row(0x9A, 0xC6, 0x8D, 0x2A),
+                row(0xE9, 0xF8, 0x48, 0x08)
+        };
+
+        byte[][] expected = new byte[4][4];
+
+        byte[][] actual = invokeAddRoundKey(rijndael, copy(state), copy(state));
+
+        assertArrayEquals(expected, actual);
+    }
+
+    @Test
+    @DisplayName("addRoundKey applied twice with the same key restores original state")
+    void addRoundKeyUndoesItselfTest() throws Exception {
+        byte[][] original = {
+                row(0x19, 0x3D, 0xE3, 0xBE),
+                row(0xA0, 0xF4, 0xE2, 0x2B),
+                row(0x9A, 0xC6, 0x8D, 0x2A),
+                row(0xE9, 0xF8, 0x48, 0x08)
+        };
+
+        byte[][] roundKey = {
+                row(0xA0, 0xFA, 0xFE, 0x17),
+                row(0x88, 0x54, 0x2C, 0xB1),
+                row(0x23, 0xA3, 0x39, 0x39),
+                row(0x2A, 0x6C, 0x76, 0x05)
+        };
+
+        byte[][] state = invokeAddRoundKey(rijndael, copy(original), roundKey);
+        byte[][] actual = invokeAddRoundKey(rijndael, state, roundKey);
+
+        assertArrayEquals(original, actual);
+    }
+
+    @ParameterizedTest(name = "state 4x{0}")
+    @CsvSource({"4", "6", "8"})
+    @DisplayName("addRoundKey works for every supported block size")
+    void addRoundKeyDifferentWidthsTest(int columns) throws Exception {
+        byte[][] state = new byte[4][columns];
+        byte[][] roundKey = new byte[4][columns];
+        byte[][] expected = new byte[4][columns];
+
+        for (int r = 0; r < 4; r++) {
+            for (int c = 0; c < columns; c++) {
+                state[r][c] = (byte) (r * 37 + c * 11 + 5);
+                roundKey[r][c] = (byte) (r * 17 + c * 23 + 9);
+                expected[r][c] = (byte) (state[r][c] ^ roundKey[r][c]);
+            }
+        }
+
+        byte[][] actual = invokeAddRoundKey(rijndael, copy(state), roundKey);
+
+        assertArrayEquals(expected, actual);
+    }
+
+    @Test
+    @DisplayName("addRoundKey modifies the original state")
+    void addRoundKeyModifiesOriginalStateTest() throws Exception {
+        byte[][] state = {
+                row(0x01, 0x02, 0x03, 0x04),
+                row(0x05, 0x06, 0x07, 0x08),
+                row(0x09, 0x0A, 0x0B, 0x0C),
+                row(0x0D, 0x0E, 0x0F, 0x10)
+        };
+
+        byte[][] roundKey = {
+                row(0x10, 0x20, 0x30, 0x40),
+                row(0x50, 0x60, 0x70, 0x80),
+                row(0x90, 0xA0, 0xB0, 0xC0),
+                row(0xD0, 0xE0, 0xF0, 0xFF)
+        };
+
+        byte[][] actual = invokeAddRoundKey(rijndael, state, roundKey);
+
+        assertSame(state, actual);
     }
 
 }
