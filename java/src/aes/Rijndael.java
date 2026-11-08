@@ -4,7 +4,10 @@ import common.Helper;
 import interfaces.SymmetricalAlgorithm;
 import models.Size;
 
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 
 public class Rijndael implements SymmetricalAlgorithm {
@@ -18,6 +21,8 @@ public class Rijndael implements SymmetricalAlgorithm {
     private byte[][] SBox;
     private byte[][] InverseSBox;
 
+    private final Map<Size, int[]> shifts;
+
     public Rijndael(Size blockSize, Size keySize) {
         this.blockSize = blockSize;
         this.keySize = keySize;
@@ -26,6 +31,8 @@ public class Rijndael implements SymmetricalAlgorithm {
 
         this.SBox = generateSBox();
         this.InverseSBox = generateInverseSBox();
+
+        this.shifts = generateShifts();
     }
 
     @Override
@@ -44,6 +51,23 @@ public class Rijndael implements SymmetricalAlgorithm {
 
     private byte[][] inverseSubBytes(byte[][] state) {
         return subBytes(state, true);
+    }
+
+    private byte[][] shiftRows(byte[][] state) {
+        int n = 4;
+        var countShifts = this.shifts.get(this.blockSize);
+        for (int row = 1; row < n; ++row) {
+            var countShiftsRow = countShifts[row];
+            var countColumns = state[row].length;
+
+            var firstPart = Arrays.copyOfRange(state[row], 0, countShiftsRow);
+            var secondPart = Arrays.copyOfRange(state[row], countShiftsRow, countColumns);
+
+            System.arraycopy(secondPart, 0, state[row], 0, countColumns - countShiftsRow);
+            System.arraycopy(firstPart, 0, state[row], countColumns - countShiftsRow, countShiftsRow);
+        }
+
+        return state;
     }
 
     private byte[][] subBytes(byte[][] state, boolean inverse) {
@@ -101,6 +125,14 @@ public class Rijndael implements SymmetricalAlgorithm {
         }
 
         return result;
+    }
+
+    private Map<Size, int[]> generateShifts() {
+        var shifts = new HashMap<Size, int[]>();
+        shifts.put(Size.S128, new int[]{0, 1, 2, 3});
+        shifts.put(Size.S192, new int[]{0, 1, 2, 3});
+        shifts.put(Size.S256, new int[]{0, 1, 3, 4});
+        return shifts;
     }
 
     private byte getNumberFromRowAndColumn(int row, int column) {

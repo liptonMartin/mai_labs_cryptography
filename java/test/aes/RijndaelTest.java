@@ -284,4 +284,51 @@ public class RijndaelTest {
             for (byte v : r)
                 assertEquals((byte) 0x52, v);
     }
+
+    @ParameterizedTest(name = "ShiftRows for block size {0} columns")
+    @CsvSource({
+            "4, 1, 2, 3",
+            "6, 1, 2, 3",
+            "8, 1, 3, 4"
+    })
+    @DisplayName("shiftRows performs correct cyclic left shifts for every block size")
+    void shiftRowsDifferentBlockSizesTest(
+            int columns,
+            int shiftRow1,
+            int shiftRow2,
+            int shiftRow3
+    ) throws Exception {
+        Size blockSize = switch (columns) {
+            case 4 -> Size.S128;
+            case 6 -> Size.S192;
+            case 8 -> Size.S256;
+            default -> throw new IllegalArgumentException("Unsupported block size");
+        };
+
+        Rijndael algorithm = new Rijndael(blockSize, Size.S128);
+
+        byte[][] input = new byte[4][columns];
+        byte[][] expected = new byte[4][columns];
+
+        int[] shifts = {0, shiftRow1, shiftRow2, shiftRow3};
+
+        // Сначала полностью заполняем входную матрицу
+        for (int r = 0; r < 4; r++) {
+            for (int c = 0; c < columns; c++) {
+                input[r][c] = (byte) (r * 32 + c);
+            }
+        }
+
+        // Затем независимо формируем ожидаемый результат
+        for (int r = 0; r < 4; r++) {
+            for (int c = 0; c < columns; c++) {
+                expected[r][c] = input[r][(c + shifts[r]) % columns];
+            }
+        }
+
+        byte[][] actual = invokeState(algorithm, "shiftRows", copy(input));
+
+        assertArrayEquals(expected, actual);
+    }
+
 }
