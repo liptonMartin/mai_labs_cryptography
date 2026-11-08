@@ -15,15 +15,20 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class RijndaelTest {
 
+    private Rijndael rijndael;
     private byte[][] sBox;
     private byte[][] inverseSBox;
 
     @BeforeEach
     void setUp() throws Exception {
-        Rijndael rijndael = new Rijndael(Size.S128, Size.S128);
+        rijndael = new Rijndael(Size.S128, Size.S128);
         sBox = invoke(rijndael, "generateSBox");
         inverseSBox = invoke(rijndael, "generateInverseSBox");
     }
+
+    // ------------------------------------------------------------------
+    // helpers
+    // ------------------------------------------------------------------
 
     // "0101_0011" -> (byte) 0x53 (в CSV значения ≥ 0b1000_0000 иначе не записать)
     private static byte b(String bits) {
@@ -36,11 +41,64 @@ public class RijndaelTest {
         return (byte[][]) method.invoke(rijndael);
     }
 
+    private static byte[][] invokeState(Rijndael rijndael, String methodName, byte[][] state) throws Exception {
+        Method method = Rijndael.class.getDeclaredMethod(methodName, byte[][].class);
+        method.setAccessible(true);
+        return (byte[][]) method.invoke(rijndael, (Object) state);
+    }
+
     // старший ниббл -> строка, младший -> столбец
     private static byte lookup(byte[][] table, byte x) {
         int v = Byte.toUnsignedInt(x);
         return table[v >>> 4][v & 0xF];
     }
+
+    // int[] -> byte[], чтобы писать значения в hex: row(0x19, 0x3D, ...)
+    private static byte[] row(int... values) {
+        byte[] result = new byte[values.length];
+        for (int i = 0; i < values.length; i++)
+            result[i] = (byte) values[i];
+        return result;
+    }
+
+    private static byte[][] copy(byte[][] state) {
+        byte[][] result = new byte[state.length][];
+        for (int i = 0; i < state.length; i++)
+            result[i] = state[i].clone();
+        return result;
+    }
+
+    // state[r][c] = r * 16 + c, то есть все 256 значений ровно по одному разу
+    private static byte[][] allBytesState() {
+        byte[][] state = new byte[16][16];
+        for (int r = 0; r < 16; r++)
+            for (int c = 0; c < 16; c++)
+                state[r][c] = (byte) (r * 16 + c);
+        return state;
+    }
+
+    // FIPS-197, Appendix B, раунд 1: "Start of Round" -> "After SubBytes"
+    private static byte[][] fipsStateBefore() {
+        return new byte[][]{
+                row(0x19, 0x3D, 0xE3, 0xBE),
+                row(0xA0, 0xF4, 0xE2, 0x2B),
+                row(0x9A, 0xC6, 0x8D, 0x2A),
+                row(0xE9, 0xF8, 0x48, 0x08),
+        };
+    }
+
+    private static byte[][] fipsStateAfter() {
+        return new byte[][]{
+                row(0xD4, 0x27, 0x11, 0xAE),
+                row(0xE0, 0xBF, 0x98, 0xF1),
+                row(0xB8, 0xB4, 0x5D, 0xE5),
+                row(0x1E, 0x41, 0x52, 0x30),
+        };
+    }
+
+    // ------------------------------------------------------------------
+    // S-box / inverse S-box
+    // ------------------------------------------------------------------
 
     @Test
     @DisplayName("S-box has 16x16 shape")
@@ -140,5 +198,90 @@ public class RijndaelTest {
             assertNotEquals(value, substituted, "fixed point at x = " + x);
             assertNotEquals((byte) ~value, substituted, "opposite fixed point at x = " + x);
         }
+    }
+
+    // ------------------------------------------------------------------
+    // subBytes / inverseSubBytes
+    // ------------------------------------------------------------------
+
+    @Test
+    @DisplayName("subBytes matches FIPS-197 Appendix B example")
+    void subBytesFipsExampleTest() throws Exception {
+        byte[][] actual = invokeState(rijndael, "subBytes", fipsStateBefore());
+        assertArrayEquals(fipsStateAfter(), actual);
+    }
+
+    @Test
+    @DisplayName("inverseSubBytes matches FIPS-197 Appendix B example")
+    void inverseSubBytesFipsExampleTest() throws Exception {
+        byte[][] actual = invokeState(rijndael, "inverseSubBytes", fipsStateAfter());
+        assertArrayEquals(fipsStateBefore(), actual);
+    }
+
+    @Test
+    @DisplayName("subBytes applied to all 256 bytes equals the S-box table")
+    void subBytesCoversWholeSBoxTest() throws Exception {
+        byte[][] actual = invokeState(rijndael, "subBytes", allBytesState());
+        assertArrayEquals(sBox, actual);
+    }
+
+    @Test
+    @DisplayName("inverseSubBytes applied to all 256 bytes equals the inverse S-box table")
+    void inverseSubBytesCoversWholeInverseSBoxTest() throws Exception {
+        byte[][] actual = invokeState(rijndael, "inverseSubBytes", allBytesState());
+        assertArrayEquals(inverseSBox, actual);
+    }
+
+    @Test
+    @DisplayName("inverseSubBytes(subBytes(state)) = state")
+    void inverseSubBytesUndoesSubBytesTest() throws Exception {
+        byte[][] original = allBytesState();
+        byte[][] substituted = invokeState(rijndael, "subBytes", copy(original));
+        byte[][] restored = invokeState(rijndael, "inverseSubBytes", substituted);
+        assertArrayEquals(original, restored);
+    }
+
+    @Test
+    @DisplayName("subBytes(inverseSubBytes(state)) = state")
+    void subBytesUndoesInverseSubBytesTest() throws Exception {
+        byte[][] original = allBytesState();
+        byte[][] substituted = invokeState(rijndael, "inverseSubBytes", copy(original));
+        byte[][] restored = invokeState(rijndael, "subBytes", substituted);
+        assertArrayEquals(original, restored);
+    }
+
+    @ParameterizedTest(name = "state 4x{0}")
+    @CsvSource({"4", "6", "8"})   // Nb = 4, 6, 8 для блоков 128/192/256 бит
+    @DisplayName("subBytes works for every state width and matches per-byte S-box lookup")
+    void subBytesDifferentWidthsTest(int columns) throws Exception {
+        byte[][] input = new byte[4][columns];
+        byte[][] expected = new byte[4][columns];
+        for (int r = 0; r < 4; r++) {
+            for (int c = 0; c < columns; c++) {
+                byte value = (byte) (r * 37 + c * 11 + 5);
+                input[r][c] = value;
+                expected[r][c] = lookup(sBox, value);
+            }
+        }
+
+        assertArrayEquals(expected, invokeState(rijndael, "subBytes", input));
+    }
+
+    @Test
+    @DisplayName("subBytes of an all-zero state gives S(00) everywhere")
+    void subBytesZeroStateTest() throws Exception {
+        byte[][] actual = invokeState(rijndael, "subBytes", new byte[4][4]);
+        for (byte[] r : actual)
+            for (byte v : r)
+                assertEquals((byte) 0x63, v);
+    }
+
+    @Test
+    @DisplayName("inverseSubBytes of an all-zero state gives InvS(00) everywhere")
+    void inverseSubBytesZeroStateTest() throws Exception {
+        byte[][] actual = invokeState(rijndael, "inverseSubBytes", new byte[4][4]);
+        for (byte[] r : actual)
+            for (byte v : r)
+                assertEquals((byte) 0x52, v);
     }
 }

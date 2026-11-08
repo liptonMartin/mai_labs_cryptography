@@ -38,7 +38,29 @@ public class Rijndael implements SymmetricalAlgorithm {
         return List.of();
     }
 
-    private void subBytes() {
+    private byte[][] subBytes(byte[][] state) {
+        return subBytes(state, false);
+    }
+
+    private byte[][] inverseSubBytes(byte[][] state) {
+        return subBytes(state, true);
+    }
+
+    private byte[][] subBytes(byte[][] state, boolean inverse) {
+        var n = state.length;
+        var m = state[0].length;
+        for (int i = 0; i < n; ++i) {
+            for (int j = 0; j < m; ++j) {
+                var number = state[i][j];
+                var row = (number & 0xFF) >> 4;
+                var column = (number & 0xFF) & 0x0F;
+
+                var value = inverse ? InverseSBox[row][column] : SBox[row][column];
+                state[i][j] = value;
+            }
+        }
+
+        return state;
     }
 
     private byte[][] generateSBox() {
