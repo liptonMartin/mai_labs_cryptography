@@ -13,15 +13,15 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class RijndaelTest {
+public class RijndaelOperationsTest {
 
-    private Rijndael rijndael;
+    private RijndaelOperations rijndael;
     private byte[][] sBox;
     private byte[][] inverseSBox;
 
     @BeforeEach
     void setUp() throws Exception {
-        rijndael = new Rijndael(Size.S128, Size.S128);
+        rijndael = new RijndaelOperations(createGaloisField(), Size.S128);
         sBox = invoke(rijndael, "generateSBox");
         inverseSBox = invoke(rijndael, "generateInverseSBox");
     }
@@ -30,19 +30,23 @@ public class RijndaelTest {
     // helpers
     // ------------------------------------------------------------------
 
+    private static GaloisField createGaloisField() {
+        return new GaloisField();
+    }
+
     // "0101_0011" -> (byte) 0x53 (в CSV значения ≥ 0b1000_0000 иначе не записать)
     private static byte b(String bits) {
         return (byte) Integer.parseInt(bits.replace("_", "").trim(), 2);
     }
 
-    private static byte[][] invoke(Rijndael rijndael, String methodName) throws Exception {
-        Method method = Rijndael.class.getDeclaredMethod(methodName);
+    private static byte[][] invoke(RijndaelOperations rijndael, String methodName) throws Exception {
+        Method method = RijndaelOperations.class.getDeclaredMethod(methodName);
         method.setAccessible(true);
         return (byte[][]) method.invoke(rijndael);
     }
 
-    private static byte[][] invokeState(Rijndael rijndael, String methodName, byte[][] state) throws Exception {
-        Method method = Rijndael.class.getDeclaredMethod(methodName, byte[][].class);
+    private static byte[][] invokeState(RijndaelOperations rijndael, String methodName, byte[][] state) throws Exception {
+        Method method = RijndaelOperations.class.getDeclaredMethod(methodName, byte[][].class);
         method.setAccessible(true);
         return (byte[][]) method.invoke(rijndael, (Object) state);
     }
@@ -97,11 +101,11 @@ public class RijndaelTest {
     }
 
     private static byte[][] invokeAddRoundKey(
-            Rijndael rijndael,
+            RijndaelOperations rijndael,
             byte[][] state,
             byte[][] roundKey
     ) throws Exception {
-        Method method = Rijndael.class.getDeclaredMethod(
+        Method method = RijndaelOperations.class.getDeclaredMethod(
                 "addRoundKey",
                 byte[][].class,
                 byte[][].class
@@ -319,7 +323,7 @@ public class RijndaelTest {
             default -> throw new IllegalArgumentException("Unsupported block size");
         };
 
-        Rijndael algorithm = new Rijndael(blockSize, Size.S128);
+        RijndaelOperations algorithm = new RijndaelOperations(createGaloisField(), blockSize);
 
         byte[][] input = new byte[4][columns];
         byte[][] expected = new byte[4][columns];
