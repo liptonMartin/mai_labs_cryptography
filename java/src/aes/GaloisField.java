@@ -19,6 +19,30 @@ public final class GaloisField {
         return (byte) result;
     }
 
+    public byte[] add(byte[] a, byte[] b) {
+        if (a.length != b.length)
+            throw new IllegalArgumentException(String.format("Number a = %s and number b = %s have different sizes", a, b));
+
+        int n = a.length;
+        for (int i = 0; i < n; ++i) {
+            a[i] = add(a[i], b[i]);
+        }
+
+        return a;
+    }
+
+    public byte[] multiply(byte[] a, byte[] b) {
+        if (a.length != b.length)
+            throw new IllegalArgumentException(String.format("Number a = %s and number b = %s have different sizes", a, b));
+
+        int n = a.length;
+        for (int i = 0; i < n; ++i) {
+            a[i] = multiply(a[i], b[i]);
+        }
+
+        return a;
+    }
+
     public byte multiply(byte a, byte b) {
         return multiplyMod(a, b, defaultMod);
     }
