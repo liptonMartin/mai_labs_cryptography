@@ -11,6 +11,14 @@ public final class GaloisField {
         return (byte) (a ^ b);
     }
 
+    public byte add(byte... numbers) {
+        int result = 0;
+        for (byte number : numbers) {
+            result = result ^ (number & 0xFF);
+        }
+        return (byte) result;
+    }
+
     public byte multiply(byte a, byte b) {
         return multiplyMod(a, b, defaultMod);
     }

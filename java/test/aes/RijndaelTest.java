@@ -478,4 +478,74 @@ public class RijndaelTest {
         assertSame(state, actual);
     }
 
+
+    @Test
+    @DisplayName("mixColumns matches FIPS-197 example")
+    void mixColumnsFipsExampleTest() throws Exception {
+        byte[][] state = {
+                row(0x87, 0xF2, 0x4D, 0x97),
+                row(0x6E, 0x4C, 0x90, 0xEC),
+                row(0x46, 0xE7, 0x4A, 0xC3),
+                row(0xA6, 0x8C, 0xD8, 0x95)
+        };
+
+        byte[][] expected = {
+                row(0x47, 0x40, 0xA3, 0x4C),
+                row(0x37, 0xD4, 0x70, 0x9F),
+                row(0x94, 0xE4, 0x3A, 0x42),
+                row(0xED, 0xA5, 0xA6, 0xBC)
+        };
+
+        byte[][] actual = invokeState(rijndael, "mixColumns", copy(state));
+
+        assertArrayEquals(expected, actual);
+    }
+
+    @Test
+    @DisplayName("mixColumns of zero state gives zero state")
+    void mixColumnsZeroStateTest() throws Exception {
+        byte[][] state = new byte[4][4];
+
+        byte[][] actual = invokeState(rijndael, "mixColumns", state);
+
+        assertArrayEquals(new byte[4][4], actual);
+    }
+
+    @Test
+    @DisplayName("mixColumns preserves columns containing identical bytes")
+    void mixColumnsIdenticalColumnBytesTest() throws Exception {
+        byte[][] state = {
+                row(0x01, 0x11, 0xA5, 0xFF),
+                row(0x01, 0x11, 0xA5, 0xFF),
+                row(0x01, 0x11, 0xA5, 0xFF),
+                row(0x01, 0x11, 0xA5, 0xFF)
+        };
+
+        byte[][] actual = invokeState(rijndael, "mixColumns", copy(state));
+
+        assertArrayEquals(state, actual);
+    }
+
+    @ParameterizedTest(name = "state 4x{0}")
+    @CsvSource({"4", "6", "8"})
+    @DisplayName("mixColumns works for every supported block size")
+    void mixColumnsDifferentWidthsTest(int columns) throws Exception {
+        byte[][] state = new byte[4][columns];
+
+        for (int r = 0; r < 4; r++) {
+            for (int c = 0; c < columns; c++) {
+                state[r][c] = (byte) (r * 37 + c * 11 + 5);
+            }
+        }
+
+        byte[][] actual = invokeState(rijndael, "mixColumns", copy(state));
+
+        assertEquals(4, actual.length);
+
+        for (byte[] row : actual) {
+            assertEquals(columns, row.length);
+        }
+    }
+
+
 }

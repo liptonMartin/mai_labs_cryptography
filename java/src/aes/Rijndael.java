@@ -45,6 +45,21 @@ public class Rijndael implements SymmetricalAlgorithm {
         return List.of();
     }
 
+    private byte[][] mixColumns(byte[][] state) {
+        int m = state[0].length;
+        for (int column = 0; column < m; ++column) {
+            byte a0 = state[0][column], a1 = state[1][column];
+            byte a2 = state[2][column], a3 = state[3][column];
+
+            state[0][column] = this.GF.add(this.GF.multiply(a0, (byte) 2), this.GF.multiply(a1, (byte) 3), a2, a3);
+            state[1][column] = this.GF.add(a0, this.GF.multiply(a1, (byte) 2), this.GF.multiply(a2, (byte) 3), a3);
+            state[2][column] = this.GF.add(a0, a1, this.GF.multiply(a2, (byte) 2), this.GF.multiply(a3, (byte) 3));
+            state[3][column] = this.GF.add(this.GF.multiply(a0, (byte) 3), a1, a2, this.GF.multiply(a3, (byte) 2));
+        }
+
+        return state;
+    }
+
     private byte[][] subBytes(byte[][] state) {
         return subBytes(state, false);
     }
