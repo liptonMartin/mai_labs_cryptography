@@ -70,20 +70,48 @@ public class RijndaelOperations {
     }
 
     public void shiftRows(byte[][] state) {
+        shiftRows(state, false);
+    }
+
+    public void inverseShiftRows(byte[][] state) {
+        shiftRows(state, true);
+    }
+
+    private void shiftRows(byte[][] state, boolean inverse) {
         int n = 4;
         var countShifts = this.shifts.get(this.blockSize);
         for (int row = 1; row < n; ++row) {
             var countShiftsRow = countShifts[row];
-            var countColumns = state[row].length;
 
-            var firstPart = Arrays.copyOfRange(state[row], 0, countShiftsRow);
-            var secondPart = Arrays.copyOfRange(state[row], countShiftsRow, countColumns);
-
-            System.arraycopy(secondPart, 0, state[row], 0, countColumns - countShiftsRow);
-            System.arraycopy(firstPart, 0, state[row], countColumns - countShiftsRow, countShiftsRow);
+            if (inverse) {
+                cycleShiftRight(state[row], countShiftsRow);
+            } else {
+                cycleShiftLeft(state[row], countShiftsRow);
+            }
         }
-
     }
+
+    public void inverseMixColumns(byte[][] state) {
+        int m = state[0].length;
+        for (int column = 0; column < m; ++column) {
+            byte a0 = state[0][column], a1 = state[1][column];
+            byte a2 = state[2][column], a3 = state[3][column];
+
+            state[0][column] = GF.add(
+                    GF.multiply(a0, (byte) 0x0E), GF.multiply(a1, (byte) 0x0B), GF.multiply(a2, (byte) 0x0D), GF.multiply(a3, (byte) 0x09)
+            );
+            state[1][column] = GF.add(
+                    GF.multiply(a0, (byte) 0x09), GF.multiply(a1, (byte) 0x0E), GF.multiply(a2, (byte) 0x0B), GF.multiply(a3, (byte) 0x0D)
+            );
+            state[2][column] = GF.add(
+                    GF.multiply(a0, (byte) 0x0D), GF.multiply(a1, (byte) 0x09), GF.multiply(a2, (byte) 0x0E), GF.multiply(a3, (byte) 0x0B)
+            );
+            state[3][column] = GF.add(
+                    GF.multiply(a0, (byte) 0x0B), GF.multiply(a1, (byte) 0x0D), GF.multiply(a2, (byte) 0x09), GF.multiply(a3, (byte) 0x0E)
+            );
+        }
+    }
+
 
     private void subBytes(byte[][] state, boolean inverse) {
         var n = state.length;
@@ -98,7 +126,6 @@ public class RijndaelOperations {
                 state[i][j] = value;
             }
         }
-
     }
 
     private byte[][] generateSBox() {
@@ -139,6 +166,26 @@ public class RijndaelOperations {
         }
 
         return result;
+    }
+
+    private void cycleShiftLeft(byte[] stateRow, int countShiftsRow) {
+        var countColumns = stateRow.length;
+
+        var firstPart = Arrays.copyOfRange(stateRow, 0, countShiftsRow);
+        var secondPart = Arrays.copyOfRange(stateRow, countShiftsRow, countColumns);
+
+        System.arraycopy(secondPart, 0, stateRow, 0, countColumns - countShiftsRow);
+        System.arraycopy(firstPart, 0, stateRow, countColumns - countShiftsRow, countShiftsRow);
+    }
+
+    private void cycleShiftRight(byte[] stateRow, int countShiftsRow) {
+        var countColumns = stateRow.length;
+
+        var firstPart = Arrays.copyOfRange(stateRow, 0, countColumns - countShiftsRow);
+        var secondPart = Arrays.copyOfRange(stateRow, countColumns - countShiftsRow, countColumns);
+
+        System.arraycopy(secondPart, 0, stateRow, 0, secondPart.length);
+        System.arraycopy(firstPart, 0, stateRow, countShiftsRow, firstPart.length);
     }
 
     private Map<Size, int[]> generateShifts() {
