@@ -1,34 +1,119 @@
 package aes;
 
+import interfaces.EncryptionRound;
+import interfaces.KeyExpansion;
 import interfaces.SymmetricalAlgorithm;
 import models.Size;
 
-import java.util.List;
-
 
 public class Rijndael implements SymmetricalAlgorithm {
-    private final GaloisField GF = new GaloisField();
+    private final GaloisField GF;
 
-    private Size blockSize = Size.S128;
-    private Size keySize = Size.S128;
+    private RijndaelOperations RO;
+    private EncryptionRound spNet;
+    private KeyExpansion keyExpansion;
 
-    private final int roundsCount;
+    private byte[] key;
 
-    public Rijndael(Size blockSize, Size keySize) {
+    private Size blockSize;
+    private Size keySize;
+
+    private int roundsCount;
+
+    private byte[][][] roundKeys;
+
+    public Rijndael(byte[] key, Size blockSize) {
+        this.GF = new GaloisField();
+        this.setup(key, blockSize);
+        this.generateRoundKeys();
+    }
+
+    public Rijndael(byte[] key, Size blockSize, byte GaloisFieldMod) {
+        this.GF = new GaloisField(GaloisFieldMod);
+        this.setup(key, blockSize);
+        this.generateRoundKeys();
+    }
+
+    private void setup(byte[] key, Size blockSize) {
+        this.key = key;
         this.blockSize = blockSize;
-        this.keySize = keySize;
+
+        var keyBits = key.length * 8;
+        this.keySize = Size.valueOf(keyBits);
 
         this.roundsCount = defineRoundsCount(blockSize, keySize);
+
+        this.RO = new RijndaelOperations(this.GF, blockSize);
+        this.spNet = new SpNet(this.RO);
+        this.keyExpansion = new RijndaelKeyExpansion(this.GF, this.RO, this.blockSize, this.keySize);
+    }
+
+    private void generateRoundKeys() {
+        this.roundKeys = this.keyExpansion.ExpandKey(this.key);
     }
 
     @Override
-    public List<Byte> Encrypt(List<Byte> block) {
-        return List.of();
+    public int getBlockSizeBytes() {
+        return this.blockSize.getValue() / 8;
     }
 
     @Override
-    public List<Byte> Decrypt(List<Byte> block) {
-        return List.of();
+    public byte[] Encrypt(byte[] block) {
+        var state = convertBlockToState(block);
+
+        RO.addRoundKey(state, roundKeys[0]);
+        for (int i = 1; i < roundsCount - 1; ++i) {
+            spNet.DoEncrypt(state, roundKeys[i]);
+        }
+
+        RO.subBytes(state);
+        RO.shiftRows(state);
+        RO.addRoundKey(state, roundKeys[roundsCount - 1]);
+
+        block = convertStateToBlock(state);
+        return block;
+    }
+
+    @Override
+    public byte[] Decrypt(byte[] block) {
+        var state = convertBlockToState(block);
+
+        RO.addRoundKey(state, roundKeys[roundsCount - 1]);
+        for (int i = roundsCount - 2; i >= 1; --i) {
+            spNet.DoDecrypt(state, roundKeys[i]);
+        }
+
+        RO.inverseShiftRows(state);
+        RO.inverseSubBytes(state);
+        RO.addRoundKey(state, roundKeys[0]);
+
+        block = convertStateToBlock(state);
+        return block;
+    }
+
+    private byte[][] convertBlockToState(byte[] block) {
+        var NB = blockSize.getValue() / 32;
+        var wordSize = 4;
+        var state = new byte[wordSize][NB];
+
+        for (int i = 0; i < NB; ++i) {
+            System.arraycopy(block, i * wordSize, state[i], 0, wordSize);
+        }
+
+        return state;
+    }
+
+    private byte[] convertStateToBlock(byte[][] state) {
+        var wordSize = state.length;
+        var NB = state[0].length;
+        var length = NB * wordSize;
+        var block = new byte[length];
+
+        for (int i = 0; i < length; ++i) {
+            block[i] = state[i % wordSize][i / NB];
+        }
+
+        return block;
     }
 
     private int defineRoundsCount(Size blockSize, Size keySize) {

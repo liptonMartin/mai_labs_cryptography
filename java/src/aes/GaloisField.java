@@ -5,7 +5,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 public final class GaloisField {
-    private final byte defaultMod = 0b0001_1011;
+    private final byte defaultMod;
+
+    public GaloisField(byte mod) {
+        this.defaultMod = mod;
+    }
+
+    public GaloisField() {
+        this.defaultMod = 0b0001_1011;
+    }
 
     public byte add(byte a, byte b) {
         return (byte) (a ^ b);
