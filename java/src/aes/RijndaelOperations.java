@@ -44,6 +44,20 @@ public class RijndaelOperations {
         return subBytes(state, false);
     }
 
+    public byte[] subWord(byte[] word) {
+        var n = word.length;
+        for (int i = 0; i < n; ++i) {
+            var number = word[i];
+            var row = (number & 0xFF) >> 4;
+            var column = (number & 0xFF) & 0x0F;
+
+            var value = SBox[row][column];
+            word[i] = value;
+        }
+
+        return word;
+    }
+
     public byte[][] inverseSubBytes(byte[][] state) {
         return subBytes(state, true);
     }
