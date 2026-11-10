@@ -1,9 +1,9 @@
 package interfaces;
 
-import java.util.List;
-
 public interface SymmetricalAlgorithm {
-    public List<Byte> Encrypt(List<Byte> block);
+    public int getBlockSizeBytes();
 
-    public List<Byte> Decrypt(List<Byte> block);
+    public byte[] Encrypt(byte[] block);
+
+    public byte[] Decrypt(byte[] block);
 }
