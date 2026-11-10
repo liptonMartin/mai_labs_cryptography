@@ -10,21 +10,19 @@ public class SpNet implements EncryptionRound {
     }
 
     @Override
-    public byte[][] DoEncrypt(byte[][] state, byte[][] roundKey) {
+    public void DoEncrypt(byte[][] state, byte[][] roundKey) {
         RO.subBytes(state);
         RO.shiftRows(state);
         RO.mixColumns(state);
         RO.addRoundKey(state, roundKey);
-        return state;
     }
 
     @Override
-    public byte[][] DoDecrypt(byte[][] state, byte[][] roundKey) {
+    public void DoDecrypt(byte[][] state, byte[][] roundKey) {
         RO.inverseShiftRows(state);
         RO.inverseSubBytes(state);
         RO.addRoundKey(state, roundKey);
         RO.inverseMixColumns(state);
-        return state;
     }
 
 }
