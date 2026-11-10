@@ -1,4 +1,4 @@
-﻿package common;
+package common;
 
 import interfaces.SymmetricalAlgorithm;
 import models.EncryptMode;

@@ -203,8 +203,15 @@ public class RijndaelKeyExpansionTest {
     @Test
     @DisplayName("rotWord rotates the word one byte to the left")
     void rotWordTest() throws Exception {
-        byte[] actual = (byte[]) invokePrivate(
-                create(Size.S128, Size.S128), "rotWord", new Class<?>[]{byte[].class}, (Object) row(1, 2, 3, 4));
-        assertArrayEquals(row(2, 3, 4, 1), actual);
+        byte[] word = row(1, 2, 3, 4);
+
+        invokePrivate(
+                create(Size.S128, Size.S128),
+                "rotWord",
+                new Class<?>[]{byte[].class},
+                (Object) word
+        );
+
+        assertArrayEquals(row(2, 3, 4, 1), word);
     }
 }

@@ -51,11 +51,11 @@ public class RijndaelKeyExpansion implements KeyExpansion {
         for (int i = NK; i < totalWords; ++i) {
             byte[] temp = words[i - 1].clone();
             if (i % NK == 0) {
-                temp = rotWord(temp);
-                temp = RO.subWord(temp);
-                temp = GF.add(temp, rCon[(i / NK) - 1]);
+                rotWord(temp);
+                RO.subWord(temp);
+                GF.add(temp, rCon[(i / NK) - 1]);
             } else if (NK > 6 && i % NK == 4) {
-                temp = RO.subWord(temp);
+                RO.subWord(temp);
             }
             words[i] = GF.add(temp, words[i - NK]);
         }
@@ -85,13 +85,12 @@ public class RijndaelKeyExpansion implements KeyExpansion {
         return result;
     }
 
-    private byte[] rotWord(byte[] word) {
+    private void rotWord(byte[] word) {
         var tmp = word[0];
         word[0] = word[1];
         word[1] = word[2];
         word[2] = word[3];
         word[3] = tmp;
-        return word;
     }
 
     private int defineRoundsCount(Size blockSize, Size keySize) {

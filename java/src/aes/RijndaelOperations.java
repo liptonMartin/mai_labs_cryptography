@@ -25,7 +25,7 @@ public class RijndaelOperations {
         this.shifts = generateShifts();
     }
 
-    public byte[][] mixColumns(byte[][] state) {
+    public void mixColumns(byte[][] state) {
         int m = state[0].length;
         for (int column = 0; column < m; ++column) {
             byte a0 = state[0][column], a1 = state[1][column];
@@ -36,15 +36,13 @@ public class RijndaelOperations {
             state[2][column] = this.GF.add(a0, a1, this.GF.multiply(a2, (byte) 2), this.GF.multiply(a3, (byte) 3));
             state[3][column] = this.GF.add(this.GF.multiply(a0, (byte) 3), a1, a2, this.GF.multiply(a3, (byte) 2));
         }
-
-        return state;
     }
 
-    public byte[][] subBytes(byte[][] state) {
-        return subBytes(state, false);
+    public void subBytes(byte[][] state) {
+        subBytes(state, false);
     }
 
-    public byte[] subWord(byte[] word) {
+    public void subWord(byte[] word) {
         var n = word.length;
         for (int i = 0; i < n; ++i) {
             var number = word[i];
@@ -54,15 +52,13 @@ public class RijndaelOperations {
             var value = SBox[row][column];
             word[i] = value;
         }
-
-        return word;
     }
 
-    public byte[][] inverseSubBytes(byte[][] state) {
-        return subBytes(state, true);
+    public void inverseSubBytes(byte[][] state) {
+        subBytes(state, true);
     }
 
-    public byte[][] addRoundKey(byte[][] state, byte[][] roundKey) {
+    public void addRoundKey(byte[][] state, byte[][] roundKey) {
         int n = state.length;
         int m = state[0].length;
 
@@ -71,11 +67,9 @@ public class RijndaelOperations {
                 state[i][j] ^= roundKey[i][j];
             }
         }
-
-        return state;
     }
 
-    public byte[][] shiftRows(byte[][] state) {
+    public void shiftRows(byte[][] state) {
         int n = 4;
         var countShifts = this.shifts.get(this.blockSize);
         for (int row = 1; row < n; ++row) {
@@ -89,10 +83,9 @@ public class RijndaelOperations {
             System.arraycopy(firstPart, 0, state[row], countColumns - countShiftsRow, countShiftsRow);
         }
 
-        return state;
     }
 
-    private byte[][] subBytes(byte[][] state, boolean inverse) {
+    private void subBytes(byte[][] state, boolean inverse) {
         var n = state.length;
         var m = state[0].length;
         for (int i = 0; i < n; ++i) {
@@ -106,7 +99,6 @@ public class RijndaelOperations {
             }
         }
 
-        return state;
     }
 
     private byte[][] generateSBox() {

@@ -48,7 +48,8 @@ public class RijndaelOperationsTest {
     private static byte[][] invokeState(RijndaelOperations rijndael, String methodName, byte[][] state) throws Exception {
         Method method = RijndaelOperations.class.getDeclaredMethod(methodName, byte[][].class);
         method.setAccessible(true);
-        return (byte[][]) method.invoke(rijndael, (Object) state);
+        method.invoke(rijndael, (Object) state);
+        return state;
     }
 
     // старший ниббл -> строка, младший -> столбец
@@ -111,7 +112,8 @@ public class RijndaelOperationsTest {
                 byte[][].class
         );
         method.setAccessible(true);
-        return (byte[][]) method.invoke(rijndael, state, roundKey);
+        method.invoke(rijndael, state, roundKey);   // мутирует state in-place
+        return state;                                // возвращаем уже изменённый
     }
 
     // ------------------------------------------------------------------
