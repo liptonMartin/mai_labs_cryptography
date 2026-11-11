@@ -62,13 +62,13 @@ public class Rijndael implements SymmetricalAlgorithm {
         var state = convertBlockToState(block);
 
         RO.addRoundKey(state, roundKeys[0]);
-        for (int i = 1; i < roundsCount - 1; ++i) {
+        for (int i = 1; i < roundsCount; ++i) {
             spNet.DoEncrypt(state, roundKeys[i]);
         }
 
         RO.subBytes(state);
         RO.shiftRows(state);
-        RO.addRoundKey(state, roundKeys[roundsCount - 1]);
+        RO.addRoundKey(state, roundKeys[roundsCount]);
 
         block = convertStateToBlock(state);
         return block;
@@ -78,8 +78,8 @@ public class Rijndael implements SymmetricalAlgorithm {
     public byte[] Decrypt(byte[] block) {
         var state = convertBlockToState(block);
 
-        RO.addRoundKey(state, roundKeys[roundsCount - 1]);
-        for (int i = roundsCount - 2; i >= 1; --i) {
+        RO.addRoundKey(state, roundKeys[roundsCount]);
+        for (int i = roundsCount - 1; i >= 1; --i) {
             spNet.DoDecrypt(state, roundKeys[i]);
         }
 
@@ -93,24 +93,25 @@ public class Rijndael implements SymmetricalAlgorithm {
 
     private byte[][] convertBlockToState(byte[] block) {
         var NB = blockSize.getValue() / 32;
-        var wordSize = 4;
-        var state = new byte[wordSize][NB];
+        var state = new byte[4][NB];
 
-        for (int i = 0; i < NB; ++i) {
-            System.arraycopy(block, i * wordSize, state[i], 0, wordSize);
+        for (int column = 0; column < NB; ++column) {
+            for (int row = 0; row < 4; ++row) {
+                state[row][column] = block[column * 4 + row];
+            }
         }
 
         return state;
     }
 
     private byte[] convertStateToBlock(byte[][] state) {
-        var wordSize = state.length;
         var NB = state[0].length;
-        var length = NB * wordSize;
-        var block = new byte[length];
+        var block = new byte[NB * 4];
 
-        for (int i = 0; i < length; ++i) {
-            block[i] = state[i % wordSize][i / NB];
+        for (int column = 0; column < NB; ++column) {
+            for (int row = 0; row < 4; ++row) {
+                block[column * 4 + row] = state[row][column];
+            }
         }
 
         return block;
