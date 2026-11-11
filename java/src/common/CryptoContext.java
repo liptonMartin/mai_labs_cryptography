@@ -1,13 +1,13 @@
 package common;
 
 import interfaces.SymmetricalAlgorithm;
+import models.Config;
 import models.EncryptMode;
 import models.PaddingMode;
 
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
@@ -25,17 +25,13 @@ public class CryptoContext {
     private final int blockSizeBytes;
 
     public CryptoContext(
-            byte[] key,
-            Function<byte[], SymmetricalAlgorithm> algorithmFactory,
+            Config config,
             EncryptMode encryptMode,
             PaddingMode paddingMode,
             byte[] initializationVector
     ) {
-        if (key == null || key.length == 0)
+        if (config.getKey() == null || config.getKey().length == 0)
             throw new IllegalArgumentException("Key cannot be null or empty");
-
-        if (algorithmFactory == null)
-            throw new IllegalArgumentException("Algorithm factory cannot be null");
 
         if (encryptMode == null)
             throw new IllegalArgumentException("Encryption mode cannot be null");
@@ -43,14 +39,14 @@ public class CryptoContext {
         if (paddingMode == null)
             throw new IllegalArgumentException("Padding mode cannot be null");
 
-        this.key = key.clone();
+        this.key = config.getKey();
         this.encryptMode = encryptMode;
         this.paddingMode = paddingMode;
         this.initializationVector = initializationVector == null
                 ? null
                 : initializationVector.clone();
 
-        this.algorithm = createAlgorithm(algorithmFactory);
+        this.algorithm = config.createAlgorithm();
         this.blockSizeBytes = this.algorithm.getBlockSizeBytes();
 
         if (blockSizeBytes <= 0 || blockSizeBytes > 255)
@@ -598,18 +594,6 @@ public class CryptoContext {
         );
 
         return result;
-    }
-
-    private SymmetricalAlgorithm createAlgorithm(Function<byte[], SymmetricalAlgorithm> algorithmFactory) {
-        var algorithm = algorithmFactory.apply(key.clone());
-
-        if (algorithm == null)
-            throw new IllegalStateException("Algorithm factory returned null");
-
-        if (algorithm.getBlockSizeBytes() != blockSizeBytes && blockSizeBytes != 0)
-            throw new IllegalStateException("Algorithm block size has changed");
-
-        return algorithm;
     }
 
     private byte[] getBlock(byte[] data, int blockNumber) {
