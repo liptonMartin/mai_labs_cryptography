@@ -17,18 +17,23 @@ public final class AesExamples {
     private static final String DefaultMessage = "Hello, AES!";
     private static final EncryptMode DefaultEncryptMode = EncryptMode.ECB;
     private static final PaddingMode DefaultPaddingMode = PaddingMode.ZEROS;
-    private static final Size DefaultSize = Size.S128;
+    private static final Size DefaultBlockSize = Size.S128;
+    private static final Size DefaultKeySize = Size.S128;
 
     private AesExamples() {
     }
 
     public static void aesMessage() throws Exception {
-        Size size = OutputHelper.readEnum("Input block size (bits)", DefaultSize);
-        int blockBytes = size.getValue() / 8;
+        Size blockSize = OutputHelper.readEnum("Input block size (bits)", DefaultBlockSize);
+        int blockBytes = blockSize.getValue() / 8;
 
-        var defaultKey = new byte[blockBytes];
+        Size keySize = OutputHelper.readEnum("Input key size (bits)", DefaultKeySize);
+        int keyBytes = keySize.getValue() / 8;
+
+        var defaultKey = new byte[keyBytes];
         Arrays.fill(defaultKey, (byte) 1);
-        byte[] key = OutputHelper.readBytes(blockBytes, defaultKey, "Input key");
+        byte[] key = OutputHelper.readBytes(keyBytes, defaultKey, "Input key");
+
         String message = OutputHelper.readString("Input message", DefaultMessage);
         EncryptMode em = OutputHelper.readEnum("Input encryption mode", DefaultEncryptMode);
         PaddingMode pm = OutputHelper.readEnum("Input padding mode", DefaultPaddingMode);
@@ -39,7 +44,8 @@ public final class AesExamples {
             iv = OutputHelper.readBytes(blockBytes, new byte[blockBytes], "Input initialization vector");
         }
 
-        var context = new CryptoContext(buildConfig(key, size, mod), em, pm, iv);
+        var context = new CryptoContext(
+                buildConfig(key, keySize, blockSize, mod), em, pm, iv);
 
         byte[] messageBytes = message.getBytes(StandardCharsets.UTF_8);
         byte[] encrypted = context.encryptAsync(messageBytes).join();
@@ -52,10 +58,16 @@ public final class AesExamples {
     }
 
     public static void aesFiles() throws Exception {
-        Size size = OutputHelper.readEnum("Input block size (bits)", DefaultSize);
-        int blockBytes = size.getValue() / 8;
+        Size blockSize = OutputHelper.readEnum("Input block size (bits)", DefaultBlockSize);
+        int blockBytes = blockSize.getValue() / 8;
 
-        byte[] key = OutputHelper.readBytes(blockBytes, new byte[blockBytes], "Input key");
+        Size keySize = OutputHelper.readEnum("Input key size (bits)", DefaultKeySize);
+        int keyBytes = keySize.getValue() / 8;
+
+        var defaultKey = new byte[keyBytes];
+        Arrays.fill(defaultKey, (byte) 1);
+        byte[] key = OutputHelper.readBytes(keyBytes, defaultKey, "Input key");
+
         EncryptMode em = OutputHelper.readEnum("Input encryption mode", DefaultEncryptMode);
         PaddingMode pm = OutputHelper.readEnum("Input padding mode", DefaultPaddingMode);
         Byte mod = OutputHelper.readOptionalByte("Input Rijndael mod", "x8 + x4 + x3 + x + 1");
@@ -65,7 +77,8 @@ public final class AesExamples {
             iv = OutputHelper.readBytes(blockBytes, new byte[blockBytes], "Input initialization vector");
         }
 
-        var context = new CryptoContext(buildConfig(key, size, mod), em, pm, iv);
+        var context = new CryptoContext(
+                buildConfig(key, keySize, blockSize, mod), em, pm, iv);
 
         Path input = OutputHelper.readFilePath("Input your file:");
         Path encrypted = OutputHelper.readFilePath("Input your output encrypted message file:");
@@ -76,9 +89,9 @@ public final class AesExamples {
         System.out.println("Done!");
     }
 
-    private static RijndaelConfig buildConfig(byte[] key, Size size, Byte mod) {
+    private static RijndaelConfig buildConfig(byte[] key, Size keySize, Size blockSize, Byte mod) {
         return mod == null
-                ? new RijndaelConfig(key, size)
-                : new RijndaelConfig(key, size, mod);
+                ? new RijndaelConfig(key, blockSize)
+                : new RijndaelConfig(key, blockSize, mod);
     }
 }
