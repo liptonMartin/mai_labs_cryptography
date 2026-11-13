@@ -1,4 +1,4 @@
-﻿package aes;
+package aes;
 
 import models.Config;
 import models.Size;

@@ -1,2 +1,2 @@
-﻿module custom.cryptography {
+module custom.cryptography {
 }
