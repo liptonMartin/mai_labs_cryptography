@@ -8,6 +8,8 @@ public final class GaloisField {
     private final byte defaultMod;
 
     public GaloisField(byte mod) {
+        if (!this.isIrreduciblePolynomial8Degree(mod))
+            throw new IllegalArgumentException("mod is not irreducible!");
         this.defaultMod = mod;
     }
 
